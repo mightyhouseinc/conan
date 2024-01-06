@@ -29,8 +29,7 @@ class Remote:
                 self.verify_ssl == other.verify_ssl and self.disabled == other.disabled)
 
     def __str__(self):
-        return "{}: {} [Verify SSL: {}, Enabled: {}]".format(self.name, self.url, self.verify_ssl,
-                                                             not self.disabled)
+        return f"{self.name}: {self.url} [Verify SSL: {self.verify_ssl}, Enabled: {not self.disabled}]"
 
     def __repr__(self):
         return str(self)
@@ -91,10 +90,9 @@ class MultiPackagesList:
                     if pyrecipe == RECIPE_EDITABLE:
                         continue
                     pyref = RecipeReference.loads(pyref)
-                    if any(r == "*" or r == pyrecipe for r in recipes):
+                    if any(r in ["*", pyrecipe] for r in recipes):
                         cache_list.add_refs([pyref])
-                    pyremote = pyreq["remote"]
-                    if pyremote:
+                    if pyremote := pyreq["remote"]:
                         remote_list = pkglist.lists.setdefault(pyremote, PackagesList())
                         remote_list.add_refs([pyref])
 
@@ -106,16 +104,14 @@ class MultiPackagesList:
             ref = RecipeReference.loads(ref)
             ref.timestamp = node["rrev_timestamp"]
             recipe = recipe.lower()
-            if any(r == "*" or r == recipe for r in recipes):
+            if any(r in ["*", recipe] for r in recipes):
                 cache_list.add_refs([ref])
 
-            remote = node["remote"]
-            if remote:
+            if remote := node["remote"]:
                 remote_list = pkglist.lists.setdefault(remote, PackagesList())
                 remote_list.add_refs([ref])
             pref = PkgReference(ref, node["package_id"], node["prev"], node["prev_timestamp"])
-            binary_remote = node["binary_remote"]
-            if binary_remote:
+            if binary_remote := node["binary_remote"]:
                 remote_list = pkglist.lists.setdefault(binary_remote, PackagesList())
                 remote_list.add_refs([ref])  # Binary listed forces recipe listed
                 remote_list.add_prefs(ref, [pref])
@@ -125,7 +121,7 @@ class MultiPackagesList:
                 continue
 
             binary = binary.lower()
-            if any(b == "*" or b == binary for b in binaries):
+            if any(b in ["*", binary] for b in binaries):
                 cache_list.add_refs([ref])  # Binary listed forces recipe listed
                 cache_list.add_prefs(ref, [pref])
         return pkglist
@@ -136,11 +132,10 @@ class PackagesList:
         self.recipes = {}
 
     def only_recipes(self):
-        result = {}
         for ref, ref_dict in self.recipes.items():
             for rrev_dict in ref_dict.get("revisions", {}).values():
                 rrev_dict.pop("packages", None)
-        return result
+        return {}
 
     def add_refs(self, refs):
         # RREVS alreday come in ASCENDING order, so upload does older revisions first
@@ -250,8 +245,7 @@ class ListPattern:
             return VersionRange(self.version[1:-1])
 
     def filter_versions(self, refs):
-        vrange = self._version_range
-        if vrange:
+        if vrange := self._version_range:
             refs = [r for r in refs if vrange.contains(r.version, None)]
         return refs
 

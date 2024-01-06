@@ -60,8 +60,7 @@ class URLCredentials:
     def add_auth(self, url, kwargs):
         for u, creds in self._urls.items():
             if url.startswith(u):
-                token = creds.get("token")
-                if token:
+                if token := creds.get("token"):
                     kwargs["headers"]["Authorization"] = f"Bearer {token}"
                 user = creds.get("user")
                 password = creds.get("password")
@@ -139,11 +138,14 @@ class ConanRequester(object):
 
         # Only set User-Agent if none was provided
         if not kwargs["headers"].get("User-Agent"):
-            platform_info = "; ".join([
-                " ".join([platform.system(), platform.release()]),
-                "Python "+platform.python_version(),
-                platform.machine()])
-            user_agent = "Conan/%s (%s)" % (client_version, platform_info)
+            platform_info = "; ".join(
+                [
+                    " ".join([platform.system(), platform.release()]),
+                    f"Python {platform.python_version()}",
+                    platform.machine(),
+                ]
+            )
+            user_agent = f"Conan/{client_version} ({platform_info})"
             kwargs["headers"]["User-Agent"] = user_agent
 
         return kwargs
@@ -173,8 +175,7 @@ class ConanRequester(object):
                 popped = True if os.environ.pop(var_name.upper(), None) else popped
         try:
             all_kwargs = self._add_kwargs(url, kwargs)
-            tmp = getattr(self._http_requester, method)(url, **all_kwargs)
-            return tmp
+            return getattr(self._http_requester, method)(url, **all_kwargs)
         finally:
             if popped:
                 os.environ.clear()

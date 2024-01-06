@@ -45,14 +45,14 @@ class LockfileAPI:
         else:  # explicit lockfile given
             lockfile_path = make_abs_path(lockfile, cwd)
             if not os.path.isfile(lockfile_path):
-                raise ConanException("Lockfile doesn't exist: {}".format(lockfile_path))
+                raise ConanException(f"Lockfile doesn't exist: {lockfile_path}")
 
         graph_lock = Lockfile.load(lockfile_path)
         graph_lock.partial = partial
 
         if overrides:
             graph_lock._overrides = Overrides.deserialize(overrides)
-        ConanOutput().info("Using lockfile: '{}'".format(lockfile_path))
+        ConanOutput().info(f"Using lockfile: '{lockfile_path}'")
         return graph_lock
 
     def update_lockfile_export(self, lockfile, conanfile, ref, is_build_require=False):

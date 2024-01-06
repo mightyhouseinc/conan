@@ -34,7 +34,7 @@ def editable_add(conan_api, parser, subparser, *args):
     cwd = os.getcwd()
     ref = conan_api.local.editable_add(args.path, args.name, args.version, args.user, args.channel,
                                        cwd, args.output_folder, remotes=remotes)
-    ConanOutput().success("Reference '{}' in editable mode".format(ref))
+    ConanOutput().success(f"Reference '{ref}' in editable mode")
 
 
 @conan_subcommand()
@@ -66,10 +66,10 @@ def print_editables_json(data):
 
 def print_editables_text(data):
     for k, v in data.items():
-        cli_out_write("%s" % k)
-        cli_out_write("    Path: %s" % v["path"])
+        cli_out_write(f"{k}")
+        cli_out_write(f'    Path: {v["path"]}')
         if v.get("output_folder"):
-            cli_out_write("    Output: %s" % v["output_folder"])
+            cli_out_write(f'    Output: {v["output_folder"]}')
 
 
 @conan_subcommand(formatters={"text": print_editables_text, "json": print_editables_json})
@@ -77,5 +77,4 @@ def editable_list(conan_api, parser, subparser, *args):
     """
     List all the packages in editable mode.
     """
-    editables = conan_api.local.editable_list()
-    return editables
+    return conan_api.local.editable_list()

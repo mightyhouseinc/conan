@@ -37,7 +37,7 @@ def _run_bin(pyinstaller_path):
     # run the binary to test if working
     conan_bin = os.path.join(pyinstaller_path, 'dist', 'conan', 'conan')
     if platform.system() == 'Windows':
-        conan_bin = '"' + conan_bin + '.exe' + '"'
+        conan_bin = f'"{conan_bin}.exe"'
     retcode = os.system(conan_bin)
     if retcode != 0:
         raise Exception("Binary not working")
@@ -133,8 +133,14 @@ def pyinstall(source_folder, onefile=False):
     else:
         distpath = os.path.join(pyinstaller_path, "dist")
 
-    command_args = [conan_path, "--noconfirm", f"--paths={source_folder}",  "--console", f"--distpath={distpath}"]
-    command_args.extend(hidden.split(" "))
+    command_args = [
+        conan_path,
+        "--noconfirm",
+        f"--paths={source_folder}",
+        "--console",
+        f"--distpath={distpath}",
+        *hidden.split(" "),
+    ]
     if win_ver:
         command_args.extend(win_ver)
     if onefile:

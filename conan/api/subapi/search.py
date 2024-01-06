@@ -26,8 +26,8 @@ class SearchAPI:
                 r.timestamp = None
                 if r not in refs:
                     refs.append(r)
-        ret = []
-        for r in refs:
-            if not only_none_user_channel or (r.user is None and r.channel is None):
-                ret.append(r)
-        return ret
+        return [
+            r
+            for r in refs
+            if not only_none_user_channel or (r.user is None and r.channel is None)
+        ]

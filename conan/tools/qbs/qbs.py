@@ -5,16 +5,13 @@ from conan.errors import ConanException
 
 
 def _configuration_dict_to_commandlist(name, config_dict):
-    command_list = ['config:%s' % name]
+    command_list = [f'config:{name}']
     for key, value in config_dict.items():
         if type(value) is bool:
-            if value:
-                b = 'true'
-            else:
-                b = 'false'
-            command_list.append('%s:%s' % (key, b))
+            b = 'true' if value else 'false'
+            command_list.append(f'{key}:{b}')
         else:
-            command_list.append('%s:%s' % (key, value))
+            command_list.append(f'{key}:{value}')
     return command_list
 
 
@@ -34,52 +31,52 @@ class Qbs(object):
             self._project_file = project_file
 
         if not os.path.exists(self._project_file):
-            raise ConanException('Qbs: could not find project file %s' % self._project_file)
+            raise ConanException(f'Qbs: could not find project file {self._project_file}')
 
     def add_configuration(self, name, values):
         self._configuration[name] = values
 
     def build(self, products=None):
-        products = products or []
         args = [
             '--no-install',
             '--build-directory', self._conanfile.build_folder,
             '--file', self._project_file,
         ]
 
-        if products:
+        if products := products or []:
             args.extend(['--products', ','.join(products)])
 
-        args.extend(['--jobs', '%s' % self.jobs])
+        args.extend(['--jobs', f'{self.jobs}'])
 
         if self.profile:
-            args.append('profile:%s' % self.profile)
+            args.append(f'profile:{self.profile}')
 
         for name in self._configuration:
             config = self._configuration[name]
             args.extend(_configuration_dict_to_commandlist(name, config))
 
-        cmd = 'qbs build %s' % (' '.join(args))
+        cmd = f"qbs build {' '.join(args)}"
         self._conanfile.run(cmd)
 
     def build_all(self):
         args = [
             '--no-install',
-            '--build-directory', self._conanfile.build_folder,
-            '--file', self._project_file,
-            '--all-products'
+            '--build-directory',
+            self._conanfile.build_folder,
+            '--file',
+            self._project_file,
+            '--all-products',
+            *['--jobs', f'{self.jobs}'],
         ]
 
-        args.extend(['--jobs', '%s' % self.jobs])
-
         if self.profile:
-            args.append('profile:%s' % self.profile)
+            args.append(f'profile:{self.profile}')
 
         for name in self._configuration:
             config = self._configuration[name]
             args.extend(_configuration_dict_to_commandlist(name, config))
 
-        cmd = 'qbs build %s' % (' '.join(args))
+        cmd = f"qbs build {' '.join(args)}"
         self._conanfile.run(cmd)
 
     def install(self):
@@ -89,8 +86,6 @@ class Qbs(object):
             '--file', self._project_file
         ]
 
-        for name in self._configuration:
-            args.append('config:%s' % name)
-
-        cmd = 'qbs install %s' % (' '.join(args))
+        args.extend(f'config:{name}' for name in self._configuration)
+        cmd = f"qbs install {' '.join(args)}"
         self._conanfile.run(cmd)

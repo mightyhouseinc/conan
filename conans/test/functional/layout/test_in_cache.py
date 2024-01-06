@@ -135,8 +135,8 @@ def test_cache_in_layout(conanfile):
     build_folder = os.path.join(bf, "my_build")
 
     # Check folders match with the declared by the layout
-    assert "Source folder: {}".format(source_folder) in client.out
-    assert "Build folder: {}".format(build_folder) in client.out
+    assert f"Source folder: {source_folder}" in client.out
+    assert f"Build folder: {build_folder}" in client.out
     # Check the source folder
     assert os.path.exists(os.path.join(source_folder, "source.h"))
 
@@ -159,11 +159,11 @@ def test_same_conanfile_local(conanfile):
 
     client.run("install . --name=lib --version=1.0 -of=install")
     client.run("source .")
-    assert "Source folder: {}".format(source_folder) in client.out
+    assert f"Source folder: {source_folder}" in client.out
     assert os.path.exists(os.path.join(source_folder, "source.h"))
 
     client.run("build .  -of=install")
-    assert "Build folder: {}".format(build_folder) in client.out
+    assert f"Build folder: {build_folder}" in client.out
     assert os.path.exists(os.path.join(build_folder, "build.lib"))
 
 

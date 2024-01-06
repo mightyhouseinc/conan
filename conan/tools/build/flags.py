@@ -28,9 +28,7 @@ def architecture_flag(settings):
                 "x86": "-m32"}.get(arch, "")
     elif compiler in ['gcc', 'apple-clang', 'clang', 'sun-cc']:
         if the_os == 'Macos' and subsystem == 'catalyst':
-            # FIXME: This might be conflicting with Autotools --target cli arg
-            apple_arch = _to_apple_arch(arch)
-            if apple_arch:
+            if apple_arch := _to_apple_arch(arch):
                 # TODO: Could we define anything like `to_apple_target()`?
                 #       Check https://github.com/rust-lang/rust/issues/48862
                 return f'--target={apple_arch}-apple-ios{subsystem_ios_version}-macabi'
@@ -70,12 +68,12 @@ def libcxx_flags(conanfile):
     if compiler == "apple-clang":
         # In apple-clang 2 only values atm are "libc++" and "libstdc++"
         lib = f'-stdlib={libcxx}'
-    elif compiler == "clang" or compiler == "intel-cc":
+    elif compiler in ["clang", "intel-cc"]:
         if libcxx == "libc++":
             lib = "-stdlib=libc++"
-        elif libcxx == "libstdc++" or libcxx == "libstdc++11":
+        elif libcxx in ["libstdc++", "libstdc++11"]:
             lib = "-stdlib=libstdc++"
-        # FIXME, something to do with the other values? Android c++_shared?
+            # FIXME, something to do with the other values? Android c++_shared?
     elif compiler == "sun-cc":
         lib = {"libCstd": "-library=Cstd",
                "libstdcxx": "-library=stdcxx4",
@@ -125,43 +123,40 @@ def build_type_flags(settings):
     if not compiler or not build_type:
         return []
 
-    # https://github.com/Kitware/CMake/blob/d7af8a34b67026feaee558433db3a835d6007e06/
-    # Modules/Platform/Windows-MSVC.cmake
     if compiler == "msvc":
-        if vs_toolset and "clang" in vs_toolset:
-            flags = {"Debug": ["-gline-tables-only", "-fno-inline", "-O0"],
-                     "Release": ["-O2"],
-                     "RelWithDebInfo": ["-gline-tables-only", "-O2", "-fno-inline"],
-                     "MinSizeRel": []
-                     }.get(build_type, ["-O2", "-Ob2"])
-        else:
-            flags = {"Debug": ["-Zi", "-Ob0", "-Od"],
-                     "Release": ["-O2", "-Ob2"],
-                     "RelWithDebInfo": ["-Zi", "-O2", "-Ob1"],
-                     "MinSizeRel": ["-O1", "-Ob1"],
-                     }.get(build_type, [])
-        return flags
-    else:
+        return (
+            {
+                "Debug": ["-gline-tables-only", "-fno-inline", "-O0"],
+                "Release": ["-O2"],
+                "RelWithDebInfo": ["-gline-tables-only", "-O2", "-fno-inline"],
+                "MinSizeRel": [],
+            }.get(build_type, ["-O2", "-Ob2"])
+            if vs_toolset and "clang" in vs_toolset
+            else {
+                "Debug": ["-Zi", "-Ob0", "-Od"],
+                "Release": ["-O2", "-Ob2"],
+                "RelWithDebInfo": ["-Zi", "-O2", "-Ob1"],
+                "MinSizeRel": ["-O1", "-Ob1"],
+            }.get(build_type, [])
+        )
         # https://github.com/Kitware/CMake/blob/f3bbb37b253a1f4a26809d6f132b3996aa2e16fc/
         # Modules/Compiler/GNU.cmake
         # clang include the gnu (overriding some things, but not build type) and apple clang
         # overrides clang but it doesn't touch clang either
-        if compiler in ["clang", "gcc", "apple-clang", "qcc", "mcst-lcc"]:
-            flags = {"Debug": ["-g"],
-                     "Release": ["-O3"],
-                     "RelWithDebInfo": ["-O2", "-g"],
-                     "MinSizeRel": ["-Os"],
-                     }.get(build_type, [])
-            return flags
-        elif compiler == "sun-cc":
-            # https://github.com/Kitware/CMake/blob/f3bbb37b253a1f4a26809d6f132b3996aa2e16fc/
-            # Modules/Compiler/SunPro-CXX.cmake
-            flags = {"Debug": ["-g"],
-                     "Release": ["-xO3"],
-                     "RelWithDebInfo": ["-xO2", "-g"],
-                     "MinSizeRel": ["-xO2", "-xspace"],
-                     }.get(build_type, [])
-            return flags
+    if compiler in ["clang", "gcc", "apple-clang", "qcc", "mcst-lcc"]:
+        return {
+            "Debug": ["-g"],
+            "Release": ["-O3"],
+            "RelWithDebInfo": ["-O2", "-g"],
+            "MinSizeRel": ["-Os"],
+        }.get(build_type, [])
+    elif compiler == "sun-cc":
+        return {
+            "Debug": ["-g"],
+            "Release": ["-xO3"],
+            "RelWithDebInfo": ["-xO2", "-g"],
+            "MinSizeRel": ["-xO2", "-xspace"],
+        }.get(build_type, [])
     return []
 
 
@@ -173,16 +168,20 @@ def cppstd_flag(settings):
     if not compiler or not compiler_version or not cppstd:
         return ""
 
-    func = {"gcc": _cppstd_gcc,
-            "clang": _cppstd_clang,
-            "apple-clang": _cppstd_apple_clang,
-            "msvc": _cppstd_msvc,
-            "intel-cc": _cppstd_intel_cc,
-            "mcst-lcc": _cppstd_mcst_lcc}.get(compiler)
-    flag = None
-    if func:
-        flag = func(Version(compiler_version), str(cppstd))
-    return flag
+    return (
+        func(Version(compiler_version), str(cppstd))
+        if (
+            func := {
+                "gcc": _cppstd_gcc,
+                "clang": _cppstd_clang,
+                "apple-clang": _cppstd_apple_clang,
+                "msvc": _cppstd_msvc,
+                "intel-cc": _cppstd_intel_cc,
+                "mcst-lcc": _cppstd_mcst_lcc,
+            }.get(compiler)
+        )
+        else None
+    )
 
 
 def cppstd_msvc_flag(visual_version, cppstd):

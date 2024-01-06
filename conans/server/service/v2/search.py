@@ -52,8 +52,7 @@ def search_packages(server_store, ref):
     ref_norev.revision = None
     if not os.path.exists(server_store.conan_revisions_root(ref_norev)):
         raise RecipeNotFoundException(ref)
-    infos = _get_local_infos_min(server_store, ref)
-    return infos
+    return _get_local_infos_min(server_store, ref)
 
 
 class SearchService(object):
@@ -66,8 +65,7 @@ class SearchService(object):
     def search_packages(self, reference):
         """Shared between v1 and v2, v1 will iterate rrevs"""
         self._authorizer.check_read_conan(self._auth_user, reference)
-        info = search_packages(self._server_store, reference)
-        return info
+        return search_packages(self._server_store, reference)
 
     def _search_recipes(self, pattern=None, ignorecase=True):
         subdirs = list_folder_subdirs(basedir=self._server_store.store, level=5)

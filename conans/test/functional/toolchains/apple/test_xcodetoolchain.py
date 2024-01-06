@@ -81,16 +81,12 @@ def test_project_xcodetoolchain(cppstd, cppstd_output, min_version):
     client.run_command("xcodegen generate")
 
     sdk_version = "11.3"
-    settings = "-s arch=x86_64 -s os.sdk_version={} -s compiler.cppstd={} " \
-               "-s compiler.libcxx=libc++ -s os.version={} " \
-               "-c tools.build.cross_building:can_run=True " \
-               "-c 'tools.build:cflags=[\"-fstack-protector-strong\"]'".format(sdk_version, cppstd,
-                                                                               min_version)
+    settings = f"""-s arch=x86_64 -s os.sdk_version={sdk_version} -s compiler.cppstd={cppstd} -s compiler.libcxx=libc++ -s os.version={min_version} -c tools.build.cross_building:can_run=True -c 'tools.build:cflags=[\"-fstack-protector-strong\"]'"""
 
-    client.run("create . -s build_type=Release {} --build=missing".format(settings))
+    client.run(f"create . -s build_type=Release {settings} --build=missing")
     assert "main __x86_64__ defined" in client.out
-    assert "main {}".format(cppstd_output) in client.out
-    assert "minos {}".format(min_version) in client.out
-    assert "sdk {}".format(sdk_version) in client.out
+    assert f"main {cppstd_output}" in client.out
+    assert f"minos {min_version}" in client.out
+    assert f"sdk {sdk_version}" in client.out
     assert "libc++" in client.out
     assert " -fstack-protector-strong -" in client.out

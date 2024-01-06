@@ -14,9 +14,10 @@ class TargetConfigurationTemplate(CMakeDepsFileTemplate):
 
     @property
     def filename(self):
-        name = "" if not self.generating_module else "module-"
-        name += "{}-Target-{}.cmake".format(self.file_name, self.cmakedeps.configuration.lower())
-        return name
+        return (
+            ("" if not self.generating_module else "module-")
+            + f"{self.file_name}-Target-{self.cmakedeps.configuration.lower()}.cmake"
+        )
 
     @property
     def context(self):
@@ -223,10 +224,11 @@ class TargetConfigurationTemplate(CMakeDepsFileTemplate):
 
     def get_declared_components_targets_names(self):
         """Returns a list of component_name"""
-        ret = []
         sorted_comps = self.conanfile.cpp_info.get_sorted_components()
-        for comp_name, comp in sorted_comps.items():
-            ret.append(self.get_component_alias(self.conanfile, comp_name))
+        ret = [
+            self.get_component_alias(self.conanfile, comp_name)
+            for comp_name, comp in sorted_comps.items()
+        ]
         ret.reverse()
         return ret
 

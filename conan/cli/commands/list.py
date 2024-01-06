@@ -21,7 +21,7 @@ value_color = Color.CYAN
 
 
 def print_serial(item, indent=None, color_index=None):
-    indent = "" if indent is None else (indent + "  ")
+    indent = "" if indent is None else f"{indent}  "
     color_index = 0 if color_index is None else (color_index + 1)
     color_array = [Color.BRIGHT_BLUE, Color.BRIGHT_GREEN, Color.BRIGHT_WHITE,
                    Color.BRIGHT_YELLOW, Color.BRIGHT_CYAN, Color.BRIGHT_MAGENTA, Color.WHITE]
@@ -44,9 +44,7 @@ def print_serial(item, indent=None, color_index=None):
     elif isinstance(item, type([])):
         for elem in item:
             cli_out_write(f"{indent}{elem}", fg=color)
-    elif isinstance(item, int):  # Can print 0
-        cli_out_write(f"{indent}{item}", fg=color)
-    elif item:
+    elif isinstance(item, int) or item:  # Can print 0
         cli_out_write(f"{indent}{item}", fg=color)
 
 
@@ -171,8 +169,10 @@ def prepare_pkglist_compact(pkglist):
             if not v:
                 continue
             if isinstance(v, dict):
-                result[k] = {"expected": ", ".join(value for value in v["expected"]),
-                             "existing": ", ".join(value for value in v["existing"])}
+                result[k] = {
+                    "expected": ", ".join(v["expected"]),
+                    "existing": ", ".join(v["existing"]),
+                }
             else:
                 result[k] = v
         return result

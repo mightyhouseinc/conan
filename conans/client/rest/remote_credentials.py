@@ -58,7 +58,7 @@ class RemoteCredentials:
         if user is None:
             user = os.getenv(f"CONAN_LOGIN_USERNAME_{remote}") or os.getenv("CONAN_LOGIN_USERNAME")
             if user:
-                ConanOutput().info("Got username '%s' from environment" % user)
+                ConanOutput().info(f"Got username '{user}' from environment")
         passwd = os.getenv(f"CONAN_PASSWORD_{remote}") or os.getenv("CONAN_PASSWORD")
         if passwd:
             ConanOutput().info("Got password '******' from environment")

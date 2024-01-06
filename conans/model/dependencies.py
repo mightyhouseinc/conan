@@ -51,11 +51,12 @@ class UserRequirementsDict(object):
                     ret.append((require, value))
         if len(ret) > 1:
             current_filters = data._require_filter or "{}"
-            requires = "\n".join(["- {}".format(require) for require, _ in ret])
-            raise ConanException("There are more than one requires matching the specified filters:"
-                                 " {}\n{}".format(current_filters, requires))
+            requires = "\n".join([f"- {require}" for require, _ in ret])
+            raise ConanException(
+                f"There are more than one requires matching the specified filters: {current_filters}\n{requires}"
+            )
         if not ret:
-            raise KeyError("'{}' not found in the dependency set".format(ref))
+            raise KeyError(f"'{ref}' not found in the dependency set")
 
         key, value = ret[0]
         return key, value

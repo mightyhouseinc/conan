@@ -28,5 +28,4 @@ class JWTManager(object):
     def get_profile(self, token):
         """Gets the user from credentials object. None if no credentials.
         Can raise jwt.ExpiredSignature and jwt.DecodeError"""
-        profile = jwt.decode(token, self.secret, algorithms=["HS256"])
-        return profile
+        return jwt.decode(token, self.secret, algorithms=["HS256"])

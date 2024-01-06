@@ -41,11 +41,10 @@ class ServerStore(object):
 
     def package_revisions_root(self, pref):
         assert pref.revision is None, "BUG: server store doesn't need PREV to " \
-                                      "package_revisions_root"
+                                          "package_revisions_root"
         assert pref.ref.revision is not None, "BUG: server store needs RREV to " \
-                                              "package_revisions_root"
-        tmp = join(self.packages(pref.ref), pref.package_id)
-        return tmp
+                                                  "package_revisions_root"
+        return join(self.packages(pref.ref), pref.package_id)
 
     def package(self, pref):
         assert pref.revision is not None, "BUG: server store needs PREV for package"
@@ -56,13 +55,11 @@ class ServerStore(object):
         return join(self.base_folder(ref), SERVER_EXPORT_FOLDER)
 
     def get_recipe_file_path(self, ref, filename):
-        abspath = join(self.export(ref), filename)
-        return abspath
+        return join(self.export(ref), filename)
 
     def get_package_file_path(self, pref, filename):
         p_path = self.package(pref)
-        abspath = join(p_path, filename)
-        return abspath
+        return join(p_path, filename)
 
     def path_exists(self, path):
         return self._storage_adapter.path_exists(path)
@@ -90,7 +87,7 @@ class ServerStore(object):
         return file_list
 
     def _delete_empty_dirs(self, ref):
-        lock_files = {REVISIONS_FILE, "%s.lock" % REVISIONS_FILE}
+        lock_files = {REVISIONS_FILE, f"{REVISIONS_FILE}.lock"}
 
         ref_path = normpath(join(self.store, ref_dir_repr(ref)))
         if ref.revision:
@@ -171,9 +168,10 @@ class ServerStore(object):
         return urls
 
     def _get_upload_urls(self, relative_path, filesizes, user=None):
-        abs_paths = {}
-        for path, filesize in filesizes.items():
-            abs_paths[join(relative_path, path)] = filesize
+        abs_paths = {
+            join(relative_path, path): filesize
+            for path, filesize in filesizes.items()
+        }
         urls = self._storage_adapter.get_upload_urls(abs_paths, user)
         urls = self._relativize_keys(urls, relative_path)
         return urls
@@ -200,16 +198,15 @@ class ServerStore(object):
             tmp.add_revision(ref.revision)
             return tmp.as_list()
         rev_file_path = self._recipe_revisions_file(ref)
-        revs = self._get_revisions_list(rev_file_path).as_list()
-        if not revs:
+        if revs := self._get_revisions_list(rev_file_path).as_list():
+            return revs
+        else:
             raise RecipeNotFoundException(ref)
-        return revs
 
     def get_last_package_revision(self, pref):
         assert(isinstance(pref, PkgReference))
         rev_file_path = self._package_revisions_file(pref)
-        rev = self._get_latest_revision(rev_file_path)
-        if rev:
+        if rev := self._get_latest_revision(rev_file_path):
             return PkgReference(pref.ref, pref.package_id, rev.revision, rev.time)
         return None
 
@@ -225,21 +222,23 @@ class ServerStore(object):
 
     def _update_last_revision(self, rev_file_path, ref):
         if self._storage_adapter.path_exists(rev_file_path):
-            rev_file = self._storage_adapter.read_file(rev_file_path,
-                                                       lock_file=rev_file_path + ".lock")
+            rev_file = self._storage_adapter.read_file(
+                rev_file_path, lock_file=f"{rev_file_path}.lock"
+            )
             rev_list = RevisionList.loads(rev_file)
         else:
             rev_list = RevisionList()
         if ref.revision is None:
-            raise ConanException("Invalid revision for: %s" % repr(ref))
+            raise ConanException(f"Invalid revision for: {repr(ref)}")
         rev_list.add_revision(ref.revision)
-        self._storage_adapter.write_file(rev_file_path, rev_list.dumps(),
-                                         lock_file=rev_file_path + ".lock")
+        self._storage_adapter.write_file(
+            rev_file_path, rev_list.dumps(), lock_file=f"{rev_file_path}.lock"
+        )
 
     def get_package_revisions_references(self, pref):
         """Returns a RevisionList"""
         assert pref.ref.revision is not None, \
-            "BUG: server store needs PREV get_package_revisions_references"
+                "BUG: server store needs PREV get_package_revisions_references"
         if pref.revision:
             tmp = RevisionList()
             tmp.add_revision(pref.revision)
@@ -247,25 +246,23 @@ class ServerStore(object):
                     for rev in tmp.as_list()]
 
         tmp = self._package_revisions_file(pref)
-        ret = self._get_revisions_list(tmp).as_list()
-        if not ret:
+        if ret := self._get_revisions_list(tmp).as_list():
+            return [PkgReference(pref.ref, pref.package_id, rev.revision, rev.time) for rev in ret]
+        else:
             raise PackageNotFoundException(pref)
-        return [PkgReference(pref.ref, pref.package_id, rev.revision, rev.time) for rev in ret]
 
     def _get_revisions_list(self, rev_file_path):
         if self._storage_adapter.path_exists(rev_file_path):
-            rev_file = self._storage_adapter.read_file(rev_file_path,
-                                                       lock_file=rev_file_path + ".lock")
-            rev_list = RevisionList.loads(rev_file)
-            return rev_list
+            rev_file = self._storage_adapter.read_file(
+                rev_file_path, lock_file=f"{rev_file_path}.lock"
+            )
+            return RevisionList.loads(rev_file)
         else:
             return RevisionList()
 
     def _get_latest_revision(self, rev_file_path):
         rev_list = self._get_revisions_list(rev_file_path)
-        if not rev_list:
-            return None
-        return rev_list.latest_revision()
+        return None if not rev_list else rev_list.latest_revision()
 
     def _recipe_revisions_file(self, ref):
         recipe_folder = normpath(join(self._store_folder, ref_dir_repr(ref)))
@@ -304,18 +301,22 @@ class ServerStore(object):
 
     def _load_revision_list(self, ref):
         path = self._recipe_revisions_file(ref)
-        rev_file = self._storage_adapter.read_file(path, lock_file=path + ".lock")
+        rev_file = self._storage_adapter.read_file(path, lock_file=f"{path}.lock")
         return RevisionList.loads(rev_file)
 
     def _save_revision_list(self, rev_list, ref):
         path = self._recipe_revisions_file(ref)
-        self._storage_adapter.write_file(path, rev_list.dumps(), lock_file=path + ".lock")
+        self._storage_adapter.write_file(
+            path, rev_list.dumps(), lock_file=f"{path}.lock"
+        )
 
     def _save_package_revision_list(self, rev_list, pref):
         path = self._package_revisions_file(pref)
-        self._storage_adapter.write_file(path, rev_list.dumps(), lock_file=path + ".lock")
+        self._storage_adapter.write_file(
+            path, rev_list.dumps(), lock_file=f"{path}.lock"
+        )
 
     def _load_package_revision_list(self, pref):
         path = self._package_revisions_file(pref)
-        rev_file = self._storage_adapter.read_file(path, lock_file=path + ".lock")
+        rev_file = self._storage_adapter.read_file(path, lock_file=f"{path}.lock")
         return RevisionList.loads(rev_file)

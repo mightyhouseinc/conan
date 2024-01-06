@@ -30,8 +30,7 @@ class ServerDiskAdapter(object):
         paths = relative_dirs(absolute_path)
         if files_subset is not None:
             paths = set(paths).intersection(set(files_subset))
-        abs_paths = [os.path.join(absolute_path, relpath) for relpath in paths]
-        return abs_paths
+        return [os.path.join(absolute_path, relpath) for relpath in paths]
 
     def get_snapshot(self, absolute_path="", files_subset=None):
         """returns a dict with the filepaths and md5"""
@@ -39,8 +38,7 @@ class ServerDiskAdapter(object):
         return {filepath: md5sum(filepath) for filepath in abs_paths}
 
     def get_file_list(self, absolute_path="", files_subset=None):
-        abs_paths = self._get_paths(absolute_path, files_subset)
-        return abs_paths
+        return self._get_paths(absolute_path, files_subset)
 
     def delete_folder(self, path):
         """Delete folder from disk. Path already contains base dir"""

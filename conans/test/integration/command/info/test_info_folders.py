@@ -35,9 +35,9 @@ package2/0.2.0@user/testing
 def client_deps():
     client = TestClient()
     client.save({CONANFILE: conanfile_py})
-    client.run(f"export . --user=user --channel=testing")
+    client.run("export . --user=user --channel=testing")
     client.save({CONANFILE: with_deps_path_file}, clean_first=True)
-    client.run(f"export . --user=user --channel=testing")
+    client.run("export . --user=user --channel=testing")
     client.save({'conanfile.txt': deps_txt_file}, clean_first=True)
     return client
 
@@ -45,8 +45,8 @@ def client_deps():
 def test_basic():
     client = TestClient()
     client.save({CONANFILE: conanfile_py})
-    client.run(f"export . --user=user --channel=testing")
-    client.run(f"graph info --requires=package/0.1.0@user/testing --format=json")
+    client.run("export . --user=user --channel=testing")
+    client.run("graph info --requires=package/0.1.0@user/testing --format=json")
     nodes = json.loads(client.stdout)["graph"]["nodes"]
     assert client.cache_folder in nodes["1"]["recipe_folder"]
     assert os.path.basename(nodes["1"]["recipe_folder"]).strip() == EXPORT_FOLDER
@@ -67,8 +67,8 @@ def test_build_id():
                 self.info_build.options.myOption = "Any"
         """)
     client.save({CONANFILE: conanfile})
-    client.run(f"export . --name=pkg --version=0.1 --user=user --channel=testing")
-    client.run(f"graph info --requires=pkg/0.1@user/testing -o pkg/*:myOption=True")
+    client.run("export . --name=pkg --version=0.1 --user=user --channel=testing")
+    client.run("graph info --requires=pkg/0.1@user/testing -o pkg/*:myOption=True")
     out = str(client.out).replace("\\", "/")
     assert "package_id: b868c8ab4ae6ddccfe19fabd62a5e180d4b18a2b" in out
     assert "build_id: d5d6fc54af6f589e338090910ac18c848a87720d" in out
@@ -80,7 +80,7 @@ def test_build_id():
 
 
 def test_deps_basic(client_deps):
-    for ref in [f"--requires=package2/0.2.0@user/testing", "conanfile.txt"]:
+    for ref in ["--requires=package2/0.2.0@user/testing", "conanfile.txt"]:
         client_deps.run(f"graph info {ref} --format=json")
         nodes = json.loads(client_deps.stdout)
         found_ref = False
@@ -124,8 +124,8 @@ def test_deps_specific_information(client_deps):
 def test_single_field():
     client = TestClient()
     client.save({CONANFILE: conanfile_py})
-    client.run(f"export . --user=user --channel=testing")
-    client.run(f"graph info --requires package/0.1.0@user/testing --format=json")
+    client.run("export . --user=user --channel=testing")
+    client.run("graph info --requires package/0.1.0@user/testing --format=json")
     nodes = json.loads(client.stdout)["graph"]["nodes"]
     assert len(nodes) == 2
     assert "package/0.1.0@user/testing" in nodes["1"]["ref"]

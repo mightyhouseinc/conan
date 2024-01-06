@@ -403,7 +403,7 @@ def test_msvc_extra_flag():
     client.save({"conanfile.py": conanfile,
                 "profile": profile})
     client.run("install . --profile:build=profile --profile:host=profile")
-    toolchain = client.load("conanautotoolstoolchain{}".format('.bat'))
+    toolchain = client.load('conanautotoolstoolchain.bat')
     assert 'set "CXXFLAGS=%CXXFLAGS% -MD -O2 -Ob2 -FS"' in toolchain
     assert 'set "CFLAGS=%CFLAGS% -MD -O2 -Ob2 -FS"' in toolchain
 
@@ -421,6 +421,6 @@ def test_msvc_extra_flag():
                 """)
     client.save({"conanfile.py": conanfile})
     client.run("install . --profile:build=profile --profile:host=profile")
-    toolchain = client.load("conanautotoolstoolchain{}".format('.bat'))
+    toolchain = client.load('conanautotoolstoolchain.bat')
     assert 'set "CXXFLAGS=%CXXFLAGS% -MD -O2 -Ob2 -FS"' in toolchain
     assert 'set "CFLAGS=%CFLAGS% -MD -O2 -Ob2 -FS"' in toolchain

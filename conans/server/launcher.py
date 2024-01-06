@@ -29,14 +29,12 @@ class ServerLauncher(object):
         server_config = migrate_and_get_server_config(
             user_folder, self.force_migration, server_dir is not None
         )
-        custom_authn = server_config.custom_authenticator
-        if custom_authn:
+        if custom_authn := server_config.custom_authenticator:
             authenticator = load_authentication_plugin(server_folder, custom_authn)
         else:
             authenticator = BasicAuthenticator(dict(server_config.users))
 
-        custom_authz = server_config.custom_authorizer
-        if custom_authz:
+        if custom_authz := server_config.custom_authorizer:
             authorizer = load_authorization_plugin(server_folder, custom_authz)
         else:
             authorizer = BasicAuthorizer(server_config.read_permissions,
@@ -55,10 +53,10 @@ class ServerLauncher(object):
                                   server_capabilities)
         if not self.force_migration:
             print("***********************")
-            print("Using config: %s" % server_config.config_filename)
-            print("Storage: %s" % server_config.disk_storage_path)
-            print("Public URL: %s" % server_config.public_url)
-            print("PORT: %s" % server_config.port)
+            print(f"Using config: {server_config.config_filename}")
+            print(f"Storage: {server_config.disk_storage_path}")
+            print(f"Public URL: {server_config.public_url}")
+            print(f"PORT: {server_config.port}")
             print("***********************")
 
     def launch(self):

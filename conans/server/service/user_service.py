@@ -8,11 +8,7 @@ class UserService(object):
         self.credentials_manager = credentials_manager
 
     def authenticate(self, username, password):
-        valid = self.authenticator.valid_user(username, password)
-
-        # If user is valid returns a token
-        if valid:
-            token = self.credentials_manager.get_token_for(username)
-            return token
+        if valid := self.authenticator.valid_user(username, password):
+            return self.credentials_manager.get_token_for(username)
         else:
             raise AuthenticationException("Wrong user or password")

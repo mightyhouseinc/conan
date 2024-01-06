@@ -25,7 +25,7 @@ def _parse_expression(subexp):
             ret += char
 
     if "=" not in ret:
-        raise Exception("Invalid expression: %s" % ret)
+        raise Exception(f"Invalid expression: {ret}")
 
     return ret
 
@@ -53,13 +53,13 @@ def evaluate_postfix(postfix, evaluator):
             if not isinstance(o2, bool):
                 o2 = evaluator(o2)
 
-            if el == "|":
-                res = o1 or o2
-            elif el == "&":
+            if el == "&":
                 res = o1 and o2
+            elif el == "|":
+                res = o1 or o2
             stack.append(res)
     if len(stack) != 1:
-        raise Exception("Bad stack: %s" % str(stack))
+        raise Exception(f"Bad stack: {stack}")
     elif not isinstance(stack[0], bool):
         return evaluator(stack[0])  # Single Expression without AND or OR
     else:

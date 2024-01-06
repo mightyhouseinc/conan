@@ -14,19 +14,19 @@ class TargetsTemplate(CMakeDepsFileTemplate):
     @property
     def filename(self):
         name = "" if not self.generating_module else "module-"
-        name += self.file_name + "Targets.cmake"
+        name += f"{self.file_name}Targets.cmake"
         return name
 
     @property
     def context(self):
-        data_pattern = "${_DIR}/" if not self.generating_module else "${_DIR}/module-"
-        data_pattern += "{}-*-data.cmake".format(self.file_name)
-
-        target_pattern = "" if not self.generating_module else "module-"
-        target_pattern += "{}-Target-*.cmake".format(self.file_name)
-
+        data_pattern = (
+            "${_DIR}/" if not self.generating_module else "${_DIR}/module-"
+        ) + f"{self.file_name}-*-data.cmake"
+        target_pattern = (
+            "" if not self.generating_module else "module-"
+        ) + f"{self.file_name}-Target-*.cmake"
         cmake_target_aliases = self.conanfile.cpp_info.\
-            get_property("cmake_target_aliases") or dict()
+                get_property("cmake_target_aliases") or dict()
 
         target = self.root_target_name
         cmake_target_aliases = {alias: target for alias in cmake_target_aliases}
@@ -35,21 +35,21 @@ class TargetsTemplate(CMakeDepsFileTemplate):
         for comp_name in self.conanfile.cpp_info.components:
             if comp_name is not None:
                 aliases = \
-                    self.conanfile.cpp_info.components[comp_name].\
-                    get_property("cmake_target_aliases") or dict()
+                        self.conanfile.cpp_info.components[comp_name].\
+                        get_property("cmake_target_aliases") or dict()
 
                 target = self.get_component_alias(self.conanfile, comp_name)
                 cmake_component_target_aliases[comp_name] = {alias: target for alias in aliases}
 
-        ret = {"pkg_name": self.pkg_name,
-               "root_target_name": self.root_target_name,
-               "file_name": self.file_name,
-               "data_pattern": data_pattern,
-               "target_pattern": target_pattern,
-               "cmake_target_aliases": cmake_target_aliases,
-               "cmake_component_target_aliases": cmake_component_target_aliases}
-
-        return ret
+        return {
+            "pkg_name": self.pkg_name,
+            "root_target_name": self.root_target_name,
+            "file_name": self.file_name,
+            "data_pattern": data_pattern,
+            "target_pattern": target_pattern,
+            "cmake_target_aliases": cmake_target_aliases,
+            "cmake_component_target_aliases": cmake_component_target_aliases,
+        }
 
     @property
     def template(self):

@@ -17,11 +17,11 @@ class PkgReference:
             return ""
         result = repr(self.ref)
         if self.package_id:
-            result += ":{}".format(self.package_id)
+            result += f":{self.package_id}"
         if self.revision is not None:
-            result += "#{}".format(self.revision)
+            result += f"#{self.revision}"
         if self.timestamp is not None:
-            result += "%{}".format(self.timestamp)
+            result += f"%{self.timestamp}"
         return result
 
     def repr_notime(self):
@@ -29,9 +29,9 @@ class PkgReference:
             return ""
         result = self.ref.repr_notime()
         if self.package_id:
-            result += ":{}".format(self.package_id)
+            result += f":{self.package_id}"
         if self.revision is not None:
-            result += "#{}".format(self.revision)
+            result += f"#{self.revision}"
         return result
 
     def repr_reduced(self):
@@ -39,15 +39,15 @@ class PkgReference:
             return ""
         result = self.ref.repr_reduced()
         if self.package_id:
-            result += ":{}".format(self.package_id[0:4])
+            result += f":{self.package_id[:4]}"
         if self.revision is not None:
-            result += "#{}".format(self.revision[0:4])
+            result += f"#{self.revision[:4]}"
         return result
 
     def repr_humantime(self):
         result = self.repr_notime()
         assert self.timestamp
-        result += " ({})".format(timestamp_to_str(self.timestamp))
+        result += f" ({timestamp_to_str(self.timestamp)})"
         return result
 
     def __str__(self):
@@ -56,7 +56,7 @@ class PkgReference:
             return ""
         result = str(self.ref)
         if self.package_id:
-            result += ":{}".format(self.package_id)
+            result += f":{self.package_id}"
         return result
 
     def __lt__(self, ref):

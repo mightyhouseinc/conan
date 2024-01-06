@@ -60,7 +60,7 @@ class GraphBinariesAnalyzer(object):
                 info = node.conanfile.info
                 latest_pref = self._remote_manager.get_latest_package_reference(pref, r, info)
                 results.append({'pref': latest_pref, 'remote': r})
-                if len(results) > 0 and not update:
+                if results and not update:
                     break
             except NotFoundException:
                 pass
@@ -68,7 +68,7 @@ class GraphBinariesAnalyzer(object):
         if not remotes and update:
             node.conanfile.output.warning("Can't update, there are no remotes defined")
 
-        if len(results) > 0:
+        if results:
             remotes_results = sorted(results, key=lambda k: k['pref'].timestamp, reverse=True)
             result = remotes_results[0]
             node.prev = result.get("pref").revision
@@ -84,8 +84,7 @@ class GraphBinariesAnalyzer(object):
         exactly the same
         """
         pref = node.pref
-        previous_nodes = self._evaluated.get(pref)
-        if previous_nodes:
+        if previous_nodes := self._evaluated.get(pref):
             previous_nodes.append(node)
             previous_node = previous_nodes[0]
             node.binary = previous_node.binary
@@ -137,7 +136,9 @@ class GraphBinariesAnalyzer(object):
                 _compatible_found(package_id, compatible_package)
                 return
         if not update:
-            conanfile.output.info(f"Compatible configurations not found in cache, checking servers")
+            conanfile.output.info(
+                "Compatible configurations not found in cache, checking servers"
+            )
             for package_id, compatible_package in compatibles.items():
                 conanfile.output.info(f"'{package_id}': "
                                       f"{conanfile.info.dump_diff(compatible_package)}")
@@ -315,7 +316,7 @@ class GraphBinariesAnalyzer(object):
             node.binary_remote = None
             node.prev = cache_latest_prev.revision
             node.pref_timestamp = cache_latest_prev.timestamp
-            assert node.prev, "PREV for %s is None" % str(node.pref)
+            assert node.prev, f"PREV for {str(node.pref)} is None"
 
     def _evaluate_package_id(self, node):
         compute_package_id(node, self._global_conf)
@@ -358,10 +359,9 @@ class GraphBinariesAnalyzer(object):
             else:
                 self._evaluate_package_id(node)
                 build_mode = main_mode if mainprefs is None or str(node.pref) in mainprefs \
-                    else test_mode
+                        else test_mode
                 if lockfile:
-                    locked_prev = lockfile.resolve_prev(node)
-                    if locked_prev:
+                    if locked_prev := lockfile.resolve_prev(node):
                         self._process_locked_node(node, build_mode, locked_prev)
                         continue
                 self._evaluate_node(node, build_mode, remotes, update)
@@ -370,9 +370,7 @@ class GraphBinariesAnalyzer(object):
 
     @staticmethod
     def _skip_binaries(graph):
-        required_nodes = set()
-        # Aggregate all necessary starting nodes
-        required_nodes.add(graph.root)
+        required_nodes = {graph.root}
         for node in graph.nodes:
             if node.binary in (BINARY_BUILD, BINARY_EDITABLE_BUILD, BINARY_EDITABLE):
                 if not node.build_allowed:  # Only those that are forced to build, not only "missing"
@@ -383,7 +381,11 @@ class GraphBinariesAnalyzer(object):
             new_root_nodes = set()
             for node in root_nodes:
                 # The nodes that are directly required by this one to build correctly
-                deps_required = set(d.node for d in node.transitive_deps.values() if d.require.files)
+                deps_required = {
+                    d.node
+                    for d in node.transitive_deps.values()
+                    if d.require.files
+                }
 
                 # second pass, transitive affected. Packages that have some dependency that is required
                 # cannot be skipped either. In theory the binary could be skipped, but build system

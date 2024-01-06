@@ -22,8 +22,7 @@ def gather_metadata(package_list, cache, metadata):
     for rref, recipe_bundle in package_list.refs().items():
         if metadata or recipe_bundle["upload"]:
             metadata_folder = cache.recipe_layout(rref).metadata()
-            files = _metadata_files(metadata_folder, metadata)
-            if files:
+            if files := _metadata_files(metadata_folder, metadata):
                 ConanOutput(scope=str(rref)).info(f"Recipe metadata: {len(files)} files")
                 recipe_bundle.setdefault("files", {}).update(files)
                 recipe_bundle["upload"] = True
@@ -31,8 +30,7 @@ def gather_metadata(package_list, cache, metadata):
         for pref, pkg_bundle in package_list.prefs(rref, recipe_bundle).items():
             if metadata or pkg_bundle["upload"]:
                 metadata_folder = cache.pkg_layout(pref).metadata()
-                files = _metadata_files(metadata_folder, metadata)
-                if files:
+                if files := _metadata_files(metadata_folder, metadata):
                     ConanOutput(scope=str(pref)).info(f"Package metadata: {len(files)} files")
                     pkg_bundle.setdefault("files", {}).update(files)
                     pkg_bundle["upload"] = True

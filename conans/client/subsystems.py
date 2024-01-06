@@ -50,13 +50,15 @@ def command_env_wrapper(conanfile, command, envfiles, envfiles_folder, scope="bu
         if subsystem is None:
             raise ConanException("win_bash/win_bash_run defined but no "
                                  "tools.microsoft.bash:subsystem")
-        if active:
-            wrapped_cmd = environment_wrap_command(envfiles, envfiles_folder, command)
-        else:
-            wrapped_cmd = _windows_bash_wrapper(conanfile, command, envfiles, envfiles_folder)
+        return (
+            environment_wrap_command(envfiles, envfiles_folder, command)
+            if active
+            else _windows_bash_wrapper(
+                conanfile, command, envfiles, envfiles_folder
+            )
+        )
     else:
-        wrapped_cmd = environment_wrap_command(envfiles, envfiles_folder, command)
-    return wrapped_cmd
+        return environment_wrap_command(envfiles, envfiles_folder, command)
 
 
 def _windows_bash_wrapper(conanfile, command, env, envfiles_folder):
@@ -65,7 +67,7 @@ def _windows_bash_wrapper(conanfile, command, env, envfiles_folder):
     """ Will wrap a unix command inside a bash terminal It requires to have MSYS2, CYGWIN, or WSL"""
 
     subsystem = conanfile.conf.get("tools.microsoft.bash:subsystem")
-    if not platform.system() == "Windows":
+    if platform.system() != "Windows":
         raise ConanException("Command only for Windows operating system")
 
     shell_path = conanfile.conf.get("tools.microsoft.bash:path")
@@ -91,7 +93,7 @@ def _windows_bash_wrapper(conanfile, command, env, envfiles_folder):
         conanfile.win_bash = wb
         env.append(path)
 
-    wrapped_shell = '"%s"' % shell_path if " " in shell_path else shell_path
+    wrapped_shell = f'"{shell_path}"' if " " in shell_path else shell_path
     wrapped_shell = environment_wrap_command(env, envfiles_folder, wrapped_shell,
                                              accepted_extensions=("bat", "ps1"))
 
@@ -100,10 +102,7 @@ def _windows_bash_wrapper(conanfile, command, env, envfiles_folder):
     wrapped_user_cmd = environment_wrap_command(env, envfiles_folder, command,
                                                 accepted_extensions=("sh", ))
     wrapped_user_cmd = _escape_windows_cmd(wrapped_user_cmd)
-    # according to https://www.msys2.org/wiki/Launchers/, it is necessary to use --login shell
-    # running without it is discouraged
-    final_command = '{} --login -c {}'.format(wrapped_shell, wrapped_user_cmd)
-    return final_command
+    return f'{wrapped_shell} --login -c {wrapped_user_cmd}'
 
 
 def _escape_windows_cmd(command):
@@ -114,7 +113,9 @@ def _escape_windows_cmd(command):
         Useful to escape commands to be executed in a windows bash (msys2, cygwin etc)
     """
     quoted_arg = cmd_args_to_string([command])
-    return "".join(["^%s" % arg if arg in r'()%!^"<>&|' else arg for arg in quoted_arg])
+    return "".join(
+        [f"^{arg}" if arg in r'()%!^"<>&|' else arg for arg in quoted_arg]
+    )
 
 
 def deduce_subsystem(conanfile, scope):
@@ -145,8 +146,9 @@ def deduce_subsystem(conanfile, scope):
             raise ConanException("win_bash_run=True but tools.microsoft.bash:subsystem "
                                  "configuration not defined")
         return WINDOWS
-    active = conanfile.conf.get("tools.microsoft.bash:active", check_type=bool)
-    if active:
+    if active := conanfile.conf.get(
+        "tools.microsoft.bash:active", check_type=bool
+    ):
         return subsystem
 
     if scope.startswith("build"):  # "run" scope do not follow win_bash
@@ -177,15 +179,14 @@ def subsystem_path(subsystem, path):
     pattern = re.compile(r'([a-z]):\\', re.IGNORECASE)
     path = pattern.sub('/\\1/', path).replace('\\', '/')
 
-    if append_prefix:
-        if subsystem in (MSYS, MSYS2):
-            return path.lower()
-        elif subsystem == CYGWIN:
-            return '/cygdrive' + path.lower()
-        elif subsystem == WSL:
-            return '/mnt' + path[0:2].lower() + path[2:]
-    else:
+    if not append_prefix:
         return path if subsystem == WSL else path.lower()
+    if subsystem in (MSYS, MSYS2):
+        return path.lower()
+    elif subsystem == CYGWIN:
+        return f'/cygdrive{path.lower()}'
+    elif subsystem == WSL:
+        return f'/mnt{path[:2].lower()}{path[2:]}'
     return None
 
 

@@ -37,8 +37,7 @@ def profile_show(conan_api, parser, subparser, *args):
     """
     add_profiles_args(subparser)
     args = parser.parse_args(*args)
-    result = conan_api.profiles.get_profiles_from_args(args)
-    return result
+    return conan_api.profiles.get_profiles_from_args(args)
 
 
 @conan_subcommand(formatters={"text": cli_out_write})
@@ -85,8 +84,7 @@ def profile_list(conan_api, parser, subparser, *args):
     """
     List all profiles in the cache.
     """
-    result = conan_api.profiles.list()
-    return result
+    return conan_api.profiles.list()
 
 
 @conan_command(group="Consumer")

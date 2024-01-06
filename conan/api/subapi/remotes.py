@@ -35,13 +35,12 @@ class RemotesAPI:
                         if remote not in filtered_remotes:
                             filtered_remotes.append(remote)
                 if not is_match:
-                    if "*" in p or "?" in p:
-                        if only_enabled:
-                            raise ConanException(
-                                f"Remotes for pattern '{p}' can't be found or are disabled")
-                    else:
+                    if "*" not in p and "?" not in p:
                         raise ConanException(f"Remote '{p}' can't be found or is disabled")
 
+                    if only_enabled:
+                        raise ConanException(
+                            f"Remotes for pattern '{p}' can't be found or are disabled")
             remotes = filtered_remotes
         return remotes
 

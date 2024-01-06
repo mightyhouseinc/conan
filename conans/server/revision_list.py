@@ -27,8 +27,7 @@ class RevisionList(object):
         if lt and lt.revision == revision_id:
             # Each uploaded file calls to update the revision
             return
-        index = self._find_revision_index(revision_id)
-        if index:
+        if index := self._find_revision_index(revision_id):
             self._data.pop(index)
 
         self._data.append(_RevisionEntry(revision_id, self._now()))
@@ -38,15 +37,11 @@ class RevisionList(object):
         return revision_timestamp_now()
 
     def latest_revision(self):
-        if not self._data:
-            return None
-        return self._data[-1]
+        return None if not self._data else self._data[-1]
 
     def get_time(self, revision):
         tmp = self._find_revision_index(revision)
-        if tmp is None:
-            return None
-        return self._data[tmp].time
+        return None if tmp is None else self._data[tmp].time
 
     def as_list(self):
         return list(reversed(self._data))
@@ -58,10 +53,10 @@ class RevisionList(object):
         self._data.pop(index)
 
     def _find_revision_index(self, revision_id):
-        for i, rev in enumerate(self._data):
-            if rev.revision == revision_id:
-                return i
-        return None
+        return next(
+            (i for i, rev in enumerate(self._data) if rev.revision == revision_id),
+            None,
+        )
 
     def __eq__(self, other):
         return self.dumps() == other.dumps()

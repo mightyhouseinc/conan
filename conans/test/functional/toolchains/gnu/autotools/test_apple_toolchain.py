@@ -46,15 +46,21 @@ conanfile_py = textwrap.dedent("""
 def test_makefile_arch(config):
     arch, os_, os_version, os_sdk = config
 
-    profile = textwrap.dedent("""
+    profile = textwrap.dedent(
+        """
                 include(default)
                 [settings]
                 os = {os}
                 {os_sdk}
                 os.version = {os_version}
                 arch = {arch}
-                """).format(os=os_, arch=arch,
-                            os_version=os_version, os_sdk="os.sdk = " + os_sdk if os_sdk else "")
+                """
+    ).format(
+        os=os_,
+        arch=arch,
+        os_version=os_version,
+        os_sdk=f"os.sdk = {os_sdk}" if os_sdk else "",
+    )
 
     t = TestClient()
     hello_h = gen_function_h(name="hello")
@@ -78,11 +84,11 @@ def test_makefile_arch(config):
 
     expected_arch = _to_apple_arch(arch)
 
-    t.run_command('lipo -info "%s"' % libhello)
-    assert "architecture: %s" % expected_arch in t.out
+    t.run_command(f'lipo -info "{libhello}"')
+    assert f"architecture: {expected_arch}" in t.out
 
-    t.run_command('lipo -info "%s"' % app)
-    assert "architecture: %s" % expected_arch in t.out
+    t.run_command(f'lipo -info "{app}"')
+    assert f"architecture: {expected_arch}" in t.out
 
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="Only OSX")
@@ -135,11 +141,11 @@ def test_catalyst(arch):
 
     expected_arch = _to_apple_arch(arch)
 
-    t.run_command('lipo -info "%s"' % libhello)
-    assert "architecture: %s" % expected_arch in t.out
+    t.run_command(f'lipo -info "{libhello}"')
+    assert f"architecture: {expected_arch}" in t.out
 
-    t.run_command('lipo -info "%s"' % app)
-    assert "architecture: %s" % expected_arch in t.out
+    t.run_command(f'lipo -info "{app}"')
+    assert f"architecture: {expected_arch}" in t.out
 
     #FIXME: recover when ci is fixed for M2
     #t.run_command('"%s"' % app)

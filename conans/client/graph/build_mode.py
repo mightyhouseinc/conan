@@ -31,16 +31,14 @@ class BuildMode:
                 self.never = True
             elif param == "cascade":
                 self.cascade = True
+            elif param.startswith("missing:"):
+                self.build_missing_patterns.append(param[len("missing:"):])
             else:
-                if param.startswith("missing:"):
-                    clean_pattern = param[len("missing:"):]
-                    self.build_missing_patterns.append(clean_pattern)
+                clean_pattern = param
+                if clean_pattern and clean_pattern[0] in ["!", "~"]:
+                    self._excluded_patterns.append(clean_pattern[1:])
                 else:
-                    clean_pattern = param
-                    if clean_pattern and clean_pattern[0] in ["!", "~"]:
-                        self._excluded_patterns.append(clean_pattern[1:])
-                    else:
-                        self.patterns.append(clean_pattern)
+                    self.patterns.append(clean_pattern)
 
             if self.never and (self.missing or self.patterns or self.cascade):
                 raise ConanException("--build=never not compatible with other options")
@@ -60,17 +58,17 @@ class BuildMode:
             return False
 
         if conan_file.build_policy == "always":
-            raise ConanException("{}: build_policy='always' has been removed. "
-                                 "Please use 'missing' only".format(conan_file))
+            raise ConanException(
+                f"{conan_file}: build_policy='always' has been removed. Please use 'missing' only"
+            )
 
         if self.cascade and with_deps_to_build:
             return True
 
-        # Patterns to match, if package matches pattern, build is forced
-        for pattern in self.patterns:
-            if ref_matches(ref, pattern, is_consumer=conan_file._conan_is_consumer):
-                return True
-        return False
+        return any(
+            ref_matches(ref, pattern, is_consumer=conan_file._conan_is_consumer)
+            for pattern in self.patterns
+        )
 
     def allowed(self, conan_file):
         if self.never or conan_file.build_policy == "never":  # this package has been export-pkg
@@ -81,9 +79,7 @@ class BuildMode:
             conan_file.output.info("Building package from source as defined by "
                                    "build_policy='missing'")
             return True
-        if self.should_build_missing(conan_file):
-            return True
-        return False
+        return bool(self.should_build_missing(conan_file))
 
     def should_build_missing(self, conanfile):
         for pattern in self.build_missing_patterns:

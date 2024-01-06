@@ -151,13 +151,15 @@ class Base(unittest.TestCase):
     def _run_build(self, settings=None, options=None):
         # Build the profile according to the settings provided
         settings = settings or {}
-        settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings.items() if v)
-        options = " ".join("-o %s=%s" % (k, v) for k, v in options.items()) if options else ""
+        settings = " ".join(f'-s {k}="{v}"' for k, v in settings.items() if v)
+        options = (
+            " ".join(f"-o {k}={v}" for k, v in options.items()) if options else ""
+        )
 
         # Run the configure corresponding to this test case
         build_directory = os.path.join(self.client.current_folder, "build").replace("\\", "/")
         with self.client.chdir(build_directory):
-            self.client.run("build .. %s %s -of=." % (settings, options))
+            self.client.run(f"build .. {settings} {options} -of=.")
             install_out = self.client.out
         return install_out
 
@@ -176,27 +178,29 @@ class Base(unittest.TestCase):
     def _incremental_build(self, build_type=None):
         build_directory = os.path.join(self.client.current_folder, "build").replace("\\", "/")
         with self.client.chdir(build_directory):
-            config = "--config %s" % build_type if build_type else ""
-            self.client.run_command("cmake --build . %s" % config)
+            config = f"--config {build_type}" if build_type else ""
+            self.client.run_command(f"cmake --build . {config}")
 
     def _run_app(self, build_type, bin_folder=False, msg="App", dyld_path=None):
         if dyld_path:
             build_directory = os.path.join(self.client.current_folder, "build").replace("\\", "/")
-            command_str = 'DYLD_LIBRARY_PATH="%s" build/app' % build_directory
+            command_str = f'DYLD_LIBRARY_PATH="{build_directory}" build/app'
         else:
-            command_str = "build/%s/app.exe" % build_type if bin_folder else "build/app"
+            command_str = f"build/{build_type}/app.exe" if bin_folder else "build/app"
             if platform.system() == "Windows":
                 command_str = command_str.replace("/", "\\")
         self.client.run_command(command_str)
-        self.assertIn("Hello: %s" % build_type, self.client.out)
-        self.assertIn("%s: %s!" % (msg, build_type), self.client.out)
+        self.assertIn(f"Hello: {build_type}", self.client.out)
+        self.assertIn(f"{msg}: {build_type}!", self.client.out)
         self.assertIn("MYVAR: MYVAR_VALUE", self.client.out)
-        self.assertIn("MYVAR_CONFIG: MYVAR_%s" % build_type.upper(), self.client.out)
+        self.assertIn(f"MYVAR_CONFIG: MYVAR_{build_type.upper()}", self.client.out)
         self.assertIn("MYDEFINE: MYDEF_VALUE", self.client.out)
-        self.assertIn("MYDEFINE_CONFIG: MYDEF_%s" % build_type.upper(), self.client.out)
+        self.assertIn(f"MYDEFINE_CONFIG: MYDEF_{build_type.upper()}", self.client.out)
         self.assertIn("MYDEFINEINT: 42", self.client.out)
-        self.assertIn("MYDEFINEINT_CONFIG: {}".format(421 if build_type == "Debug" else 422),
-                      self.client.out)
+        self.assertIn(
+            f'MYDEFINEINT_CONFIG: {421 if build_type == "Debug" else 422}',
+            self.client.out,
+        )
 
 
 @pytest.mark.skipif(platform.system() != "Windows", reason="Only for windows")
@@ -231,19 +235,21 @@ class WinTest(Base):
         generator_platform = "x64" if arch == "x86_64" else "Win32"
         arch_flag = "x64" if arch == "x86_64" else "X86"
         shared_str = "ON" if shared else "OFF"
-        vals = {"CMAKE_GENERATOR_PLATFORM": generator_platform,
-                "CMAKE_BUILD_TYPE": "",
-                "CMAKE_CXX_FLAGS": "/MP1 /DWIN32 /D_WINDOWS /GR /EHsc",
-                "CMAKE_CXX_FLAGS_DEBUG": "/Zi /Ob0 /Od /RTC1",
-                "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
-                "CMAKE_C_FLAGS": "/MP1 /DWIN32 /D_WINDOWS",
-                "CMAKE_C_FLAGS_DEBUG": "/Zi /Ob0 /Od /RTC1",
-                "CMAKE_C_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
-                "CMAKE_SHARED_LINKER_FLAGS": "/machine:%s" % arch_flag,
-                "CMAKE_EXE_LINKER_FLAGS": "/machine:%s" % arch_flag,
-                "CMAKE_CXX_STANDARD": cppstd,
-                "CMAKE_CXX_EXTENSIONS": "OFF",
-                "BUILD_SHARED_LIBS": shared_str}
+        vals = {
+            "CMAKE_GENERATOR_PLATFORM": generator_platform,
+            "CMAKE_BUILD_TYPE": "",
+            "CMAKE_CXX_FLAGS": "/MP1 /DWIN32 /D_WINDOWS /GR /EHsc",
+            "CMAKE_CXX_FLAGS_DEBUG": "/Zi /Ob0 /Od /RTC1",
+            "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+            "CMAKE_C_FLAGS": "/MP1 /DWIN32 /D_WINDOWS",
+            "CMAKE_C_FLAGS_DEBUG": "/Zi /Ob0 /Od /RTC1",
+            "CMAKE_C_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+            "CMAKE_SHARED_LINKER_FLAGS": f"/machine:{arch_flag}",
+            "CMAKE_EXE_LINKER_FLAGS": f"/machine:{arch_flag}",
+            "CMAKE_CXX_STANDARD": cppstd,
+            "CMAKE_CXX_EXTENSIONS": "OFF",
+            "BUILD_SHARED_LIBS": shared_str,
+        }
 
         def _verify_out(marker=">>"):
             if shared:
@@ -253,7 +259,7 @@ class WinTest(Base):
 
             out = str(self.client.out).splitlines()
             for k, v in vals.items():
-                self.assertIn("%s %s: %s" % (marker, k, v), out)
+                self.assertIn(f"{marker} {k}: {v}", out)
 
         _verify_out()
 
@@ -284,7 +290,7 @@ class WinTest(Base):
                        "MYDEFINE_CONFIG": "MYDEF_DEBUG"
                        })
 
-        static_runtime = True if runtime == "static" or "MT" in runtime else False
+        static_runtime = runtime == "static" or "MT" in runtime
         check_vs_runtime("build/Release/app.exe", self.client, "15", build_type="Release",
                          static_runtime=static_runtime)
         check_vs_runtime("build/Debug/app.exe", self.client, "15", build_type="Debug",
@@ -341,7 +347,7 @@ class WinTest(Base):
 
             out = str(self.client.out).splitlines()
             for k, v in cmake_vars.items():
-                self.assertIn("%s %s: %s" % (marker, k, v), out)
+                self.assertIn(f"{marker} {k}: {v}", out)
 
         _verify_out()
         self._run_app(build_type)
@@ -379,9 +385,9 @@ class LinuxTest(Base):
         arch_str = "-m32" if arch == "x86" else "-m64"
         cxx11_abi_str = "_GLIBCXX_USE_CXX11_ABI=0;" if libcxx == "libstdc++" else ""
         defines = '%sMYDEFINE="MYDEF_VALUE";MYDEFINEINT=42;'\
-                  'MYDEFINE_CONFIG=$<IF:$<CONFIG:debug>,"MYDEF_DEBUG",$<IF:$<CONFIG:release>,'\
-                  '"MYDEF_RELEASE","">>;MYDEFINEINT_CONFIG=$<IF:$<CONFIG:debug>,421,'\
-                  '$<IF:$<CONFIG:release>,422,"">>' % cxx11_abi_str
+                      'MYDEFINE_CONFIG=$<IF:$<CONFIG:debug>,"MYDEF_DEBUG",$<IF:$<CONFIG:release>,'\
+                      '"MYDEF_RELEASE","">>;MYDEFINEINT_CONFIG=$<IF:$<CONFIG:debug>,421,'\
+                      '$<IF:$<CONFIG:release>,422,"">>' % cxx11_abi_str
         vals = {"CMAKE_CXX_STANDARD": "14",
                 "CMAKE_CXX_EXTENSIONS": extensions_str,
                 "CMAKE_BUILD_TYPE": build_type,
@@ -407,7 +413,7 @@ class LinuxTest(Base):
 
             out = str(self.client.out).splitlines()
             for k, v in vals.items():
-                self.assertIn("%s %s: %s" % (marker, k, v), out)
+                self.assertIn(f"{marker} {k}: {v}", out)
 
         _verify_out()
 
@@ -454,9 +460,7 @@ class AppleTest(Base):
                 "CMAKE_EXE_LINKER_FLAGS": "-m64",
             })
         else:
-            vals.update({
-                "CMAKE_CXX_FLAGS": "-stdlib=libc++",
-            })
+            vals["CMAKE_CXX_FLAGS"] = "-stdlib=libc++"
 
         def _verify_out(marker=">>"):
             if shared:
@@ -468,7 +472,7 @@ class AppleTest(Base):
                     self.assertIn("Built target app_lib", self.client.out)
             out = str(self.client.out).splitlines()
             for k, v in vals.items():
-                self.assertIn("%s %s: %s" % (marker, k, v), out)
+                self.assertIn(f"{marker} {k}: {v}", out)
 
         _verify_out()
 
@@ -494,8 +498,10 @@ def test_msvc_vs_versiontoolset(version, vs_version):
                 "build_type": "Release",
                 }
     client = TestClient()
-    save(client.cache.new_config_path,
-         "tools.microsoft.msbuild:vs_version={}".format(vs_version))
+    save(
+        client.cache.new_config_path,
+        f"tools.microsoft.msbuild:vs_version={vs_version}",
+    )
     conanfile = textwrap.dedent("""
             from conan import ConanFile
             from conan.tools.cmake import CMake
@@ -518,8 +524,8 @@ def test_msvc_vs_versiontoolset(version, vs_version):
                  "CMakeLists.txt": cmakelists,
                  "app.cpp": main,
                  })
-    settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings.items() if v)
-    client.run("create . --name=app --version=1.0 {}".format(settings))
+    settings = " ".join(f'-s {k}="{v}"' for k, v in settings.items() if v)
+    client.run(f"create . --name=app --version=1.0 {settings}")
     assert '-G "Visual Studio 15 2017"' in client.out
 
     check_exe_run(client.out, "main", "msvc", version, "Release", "x86_64", "14")

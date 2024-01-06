@@ -22,7 +22,7 @@ def test_toolchain_win(compiler, version, runtime):
                 "arch": "x86_64"}
 
     # Build the profile according to the settings provided
-    settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings.items() if v)
+    settings = " ".join(f'-s {k}="{v}"' for k, v in settings.items() if v)
 
     conanfile = textwrap.dedent("""
         from conan import ConanFile
@@ -35,7 +35,7 @@ def test_toolchain_win(compiler, version, runtime):
                 msbuild.generate()
             """)
     client.save({"conanfile.py": conanfile})
-    client.run("install . {}".format(settings))
+    client.run(f"install . {settings}")
     props = client.load("conantoolchain_release_x64.props")
     assert "<IncludeExternals>true</IncludeExternals>" in props
     assert "<LanguageStandard>stdcpp14</LanguageStandard>" in props

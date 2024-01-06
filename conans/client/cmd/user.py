@@ -7,11 +7,12 @@ def users_list(localdb, remotes):
 
     remotes_info = []
     for remote in remotes:
-        user_info = {}
         user, token, _ = localdb.get_login(remote.url)
-        user_info["name"] = remote.name
-        user_info["user_name"] = user
-        user_info["authenticated"] = True if token else False
+        user_info = {
+            "name": remote.name,
+            "user_name": user,
+            "authenticated": bool(token),
+        }
         remotes_info.append(user_info)
     return remotes_info
 

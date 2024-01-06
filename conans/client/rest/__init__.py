@@ -15,11 +15,11 @@ def response_to_str(response):
             #  {"errors" : [ {"status" : 400, "message" : "Bla bla bla"}]}
             try:
                 data = json.loads(content)["errors"][0]
-                content = "{}: {}".format(data["status"], data["message"])
+                content = f'{data["status"]}: {data["message"]}'
             except Exception:
                 pass
         elif "text/html" in content_type:
-            content = "{}: {}".format(response.status_code, response.reason)
+            content = f"{response.status_code}: {response.reason}"
 
         return content
 

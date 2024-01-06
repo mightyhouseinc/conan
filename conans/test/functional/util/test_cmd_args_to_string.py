@@ -61,12 +61,12 @@ def application_folder():
 ])
 def test_unix_cases(application_folder, _input, output):
     _input = ["arg_printer"] + _input
-    output = "arg_printer {}".format(output)
+    output = f"arg_printer {output}"
     assert cmd_args_to_string(_input) == output
 
     # Check calling the exe that the arguments are the same we tried to input
     with chdir(application_folder):
-        cmd_parsed_output = check_output_runner("./{}".format(output))
+        cmd_parsed_output = check_output_runner(f"./{output}")
         interpreted_args = cmd_parsed_output.splitlines()
         real_args = _input[1:]
         assert real_args == interpreted_args
@@ -84,7 +84,7 @@ def test_unix_cases(application_folder, _input, output):
 def test_windows_cases(application_folder, _input, output):
     from subprocess import list2cmdline
     _input = ["arg_printer.exe"] + _input
-    output = "arg_printer.exe {}".format(output)
+    output = f"arg_printer.exe {output}"
     assert list2cmdline(_input) == output
     assert cmd_args_to_string(_input) == output
 

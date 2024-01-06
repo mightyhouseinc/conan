@@ -230,7 +230,7 @@ def test_shared_same_dir_using_tool(test_client_shared):
     # Alternative 1, add the "." to the rpaths so the @rpath from the exe can be replaced with "."
     test_client_shared.current_folder = os.path.join(test_client_shared.current_folder, exe_folder)
     test_client_shared.run_command("install_name_tool -add_rpath '.' example")
-    test_client_shared.run_command("./{}".format("example"))
+    test_client_shared.run_command('./example')
 
 
 @pytest.mark.tool("cmake")

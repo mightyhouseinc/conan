@@ -81,7 +81,7 @@ def lock_merge(conan_api, parser, subparser, *args):
 
     lockfile_out = make_abs_path(args.lockfile_out)
     result.save(lockfile_out)
-    ConanOutput().info("Generated lockfile: %s" % lockfile_out)
+    ConanOutput().info(f"Generated lockfile: {lockfile_out}")
 
 
 @conan_subcommand()

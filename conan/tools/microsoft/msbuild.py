@@ -55,22 +55,20 @@ class MSBuild(object):
         :return: ``str`` msbuild command line.
         """
         # TODO: Enable output_binary_log via config
-        cmd = ('msbuild "%s" /p:Configuration="%s" /p:Platform=%s'
-               % (sln, self.build_type, self.platform))
+        cmd = f'msbuild "{sln}" /p:Configuration="{self.build_type}" /p:Platform={self.platform}'
 
-        verbosity = msbuild_verbosity_cmd_line_arg(self._conanfile)
-        if verbosity:
-            cmd += " {}".format(verbosity)
+        if verbosity := msbuild_verbosity_cmd_line_arg(self._conanfile):
+            cmd += f" {verbosity}"
 
-        maxcpucount = self._conanfile.conf.get("tools.microsoft.msbuild:max_cpu_count",
-                                               check_type=int)
-        if maxcpucount:
-            cmd += " /m:{}".format(maxcpucount)
+        if maxcpucount := self._conanfile.conf.get(
+            "tools.microsoft.msbuild:max_cpu_count", check_type=int
+        ):
+            cmd += f" /m:{maxcpucount}"
 
         if targets:
             if not isinstance(targets, list):
                 raise ConanException("targets argument should be a list")
-            cmd += " /target:{}".format(";".join(targets))
+            cmd += f' /target:{";".join(targets)}'
 
         return cmd
 

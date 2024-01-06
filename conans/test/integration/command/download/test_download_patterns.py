@@ -146,7 +146,7 @@ class TestDownloadPatterErrors:
     def client(self):
         client = TestClient(default_server_user=True)
         client.save({"conanfile.py": GenConanfile("pkg", "0.1")})
-        client.run(f"create .")
+        client.run("create .")
         client.run("upload *#*:*#* -r=default -c")
         return client
 

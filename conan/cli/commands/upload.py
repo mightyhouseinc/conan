@@ -16,23 +16,24 @@ def summary_upload_list(results):
     info = results["results"]
 
     def format_upload(item):
-        if isinstance(item, dict):
-            result = {}
-            for k, v in item.items():
-                if isinstance(v, dict):
-                    v.pop("info", None)
-                    v.pop("timestamp", None)
-                    v.pop("files", None)
-                    upload_value = v.pop("upload", None)
-                    if upload_value is not None:
-                        msg = "Uploaded" if upload_value else "Skipped, already in server"
-                        force_upload = v.pop("force_upload", None)
-                        if force_upload:
-                            msg += " - forced"
-                        k = f"{k} ({msg})"
-                result[k] = format_upload(v)
-            return result
-        return item
+        if not isinstance(item, dict):
+            return item
+        result = {}
+        for k, v in item.items():
+            if isinstance(v, dict):
+                v.pop("info", None)
+                v.pop("timestamp", None)
+                v.pop("files", None)
+                upload_value = v.pop("upload", None)
+                if upload_value is not None:
+                    msg = "Uploaded" if upload_value else "Skipped, already in server"
+                    force_upload = v.pop("force_upload", None)
+                    if force_upload:
+                        msg += " - forced"
+                    k = f"{k} ({msg})"
+            result[k] = format_upload(v)
+        return result
+
     info = {remote: format_upload(values) for remote, values in info.items()}
     print_serial(info)
 
@@ -114,9 +115,11 @@ def upload(conan_api: ConanAPI, parser, *args):
     elif args.list:
         # Don't error on no recipes for automated workflows using list,
         # but warn to tell the user that no packages were uploaded
-        ConanOutput().warning(f"No packages were uploaded because the package list is empty.")
+        ConanOutput().warning(
+            "No packages were uploaded because the package list is empty."
+        )
     else:
-        raise ConanException("No recipes found matching pattern '{}'".format(args.pattern))
+        raise ConanException(f"No recipes found matching pattern '{args.pattern}'")
 
     pkglist = MultiPackagesList()
     pkglist.add(remote.name, package_list)
@@ -129,7 +132,7 @@ def upload(conan_api: ConanAPI, parser, *args):
 def _ask_confirm_upload(conan_api, package_list):
     ui = UserInput(conan_api.config.get("core:non_interactive"))
     for ref, bundle in package_list.refs().items():
-        msg = "Are you sure you want to upload recipe '%s'?" % ref.repr_notime()
+        msg = f"Are you sure you want to upload recipe '{ref.repr_notime()}'?"
         ref_dict = package_list.recipes[str(ref)]["revisions"]
         if not ui.request_boolean(msg):
             ref_dict.pop(ref.revision)
@@ -138,7 +141,7 @@ def _ask_confirm_upload(conan_api, package_list):
                 package_list.recipes.pop(str(ref))
         else:
             for pref, prev_bundle in package_list.prefs(ref, bundle).items():
-                msg = "Are you sure you want to upload package '%s'?" % pref.repr_notime()
+                msg = f"Are you sure you want to upload package '{pref.repr_notime()}'?"
                 pkgs_dict = ref_dict[ref.revision]["packages"]
                 if not ui.request_boolean(msg):
                     pref_dict = pkgs_dict[pref.package_id]["revisions"]

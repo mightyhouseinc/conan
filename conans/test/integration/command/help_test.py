@@ -7,7 +7,7 @@ class TestHelp:
     def test_version(self):
         c = TestClient()
         c.run("--version")
-        assert "Conan version %s" % __version__ in c.out
+        assert f"Conan version {__version__}" in c.out
 
     def test_unknown_command(self):
         c = TestClient()

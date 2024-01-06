@@ -173,8 +173,7 @@ class CacheAPI:
                 out.info(f"Restore: {pref} in {pkg_folder}")
                 # We need to put the package in the final location in the cache
                 shutil.move(os.path.join(cache.cache_folder, pkg_folder), pkg_layout.package())
-                metadata_folder = pref_bundle.get("metadata_folder")
-                if metadata_folder:
+                if metadata_folder := pref_bundle.get("metadata_folder"):
                     out.info(f"Restore: {pref} metadata in {metadata_folder}")
                     # We need to put the package in the final location in the cache
                     shutil.move(os.path.join(cache.cache_folder, metadata_folder),

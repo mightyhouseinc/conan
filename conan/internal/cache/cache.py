@@ -46,7 +46,7 @@ class DataCache:
         sha_bytes = md.hexdigest()
         # len based on: https://github.com/conan-io/conan/pull/9595#issuecomment-918976451
         # Reduce length in 3 characters 16 - 3 = 13
-        return sha_bytes[0:13]
+        return sha_bytes[:13]
 
     @staticmethod
     def _get_tmp_path(ref: RecipeReference):

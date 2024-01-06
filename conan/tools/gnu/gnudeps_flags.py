@@ -38,7 +38,7 @@ class GnuDepsFlags(object):
 
     @staticmethod
     def _format_defines(defines):
-        return ["-D%s" % define for define in defines] if defines else []
+        return [f"-D{define}" for define in defines] if defines else []
 
     def _format_frameworks(self, frameworks, is_path=False):
         """
@@ -54,7 +54,7 @@ class GnuDepsFlags(object):
         if is_path:
             return ["-F\"%s\"" % self._adjust_path(framework_path) for framework_path in frameworks]
         else:
-            return ["-framework %s" % framework for framework in frameworks]
+            return [f"-framework {framework}" for framework in frameworks]
 
     def _format_include_paths(self, include_paths):
         if not include_paths:
@@ -83,7 +83,7 @@ class GnuDepsFlags(object):
                     library += ".lib"
                 result.append(library)
             else:
-                result.append("-l%s" % library)
+                result.append(f"-l{library}")
         return result
 
     def _adjust_path(self, path):
@@ -93,4 +93,4 @@ class GnuDepsFlags(object):
             path = path.replace('\\', '/')
 
         path = subsystem_path(self._subsystem, path)
-        return '"%s"' % path if ' ' in path else path
+        return f'"{path}"' if ' ' in path else path

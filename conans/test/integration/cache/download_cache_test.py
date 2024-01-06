@@ -157,7 +157,9 @@ class TestDownloadCache:
         c.run("remove * -c")
 
         # enable cache
-        c.save({"global.conf": f"core.download:download_cache=mytmp_folder"},
-               path=c.cache.cache_folder)
+        c.save(
+            {"global.conf": "core.download:download_cache=mytmp_folder"},
+            path=c.cache.cache_folder,
+        )
         c.run("install --requires=mypkg/0.1@user/testing", assert_error=True)
         assert 'core.download:download_cache must be an absolute path' in c.out

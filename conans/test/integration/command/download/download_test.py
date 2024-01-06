@@ -34,7 +34,7 @@ def test_no_user_channel():
     client.run("upload * --confirm -r default")
     client.run("remove * -c")
 
-    client.run("download pkg/1.0:{} -r default".format(NO_SETTINGS_PACKAGE_ID))
+    client.run(f"download pkg/1.0:{NO_SETTINGS_PACKAGE_ID} -r default")
     assert f"Downloading package 'pkg/1.0#4d670581ccb765839f2239cc8dff8fbd:{NO_SETTINGS_PACKAGE_ID}" in client.out
 
     # All

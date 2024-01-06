@@ -74,7 +74,7 @@ class TestNewCommandUserTemplate:
         conanfile = client.load("conanfile.py")
         assert 'name = "hello"' in conanfile
         assert 'version = "0.1"' in conanfile
-        assert 'conan_version = "{}"'.format(client_version) in conanfile
+        assert f'conan_version = "{client_version}"' in conanfile
 
     def test_user_template_abs(self):
         tmp_folder = temp_folder()
@@ -96,14 +96,14 @@ class TestNewCommandUserTemplate:
                 version = "{{version}}"
                 conan_version = "{{conan_version}}"
         """)
-        path = os.path.join(client.cache_folder, f"templates/command/new/mytemplate")
+        path = os.path.join(client.cache_folder, "templates/command/new/mytemplate")
         save(os.path.join(path, "conanfile.py"), template1)
         save(os.path.join(path, "file.h"), "{{header}}")
 
-        client.run(f"new mytemplate -d name=hello -d version=0.1 -d header=")
+        client.run("new mytemplate -d name=hello -d version=0.1 -d header=")
         assert not os.path.exists(os.path.join(client.current_folder, "file.h"))
         assert not os.path.exists(os.path.join(client.current_folder, "file.cpp"))
-        client.run(f"new mytemplate -d name=hello -d version=0.1 -d header=xxx -f")
+        client.run("new mytemplate -d name=hello -d version=0.1 -d header=xxx -f")
         assert os.path.exists(os.path.join(client.current_folder, "file.h"))
         assert not os.path.exists(os.path.join(client.current_folder, "file.cpp"))
 

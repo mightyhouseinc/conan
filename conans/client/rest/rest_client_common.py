@@ -17,7 +17,7 @@ class JWTAuth(AuthBase):
 
     def __call__(self, request):
         if self.token:
-            request.headers['Authorization'] = "Bearer %s" % str(self.token)
+            request.headers['Authorization'] = f"Bearer {str(self.token)}"
         return request
 
 
@@ -27,13 +27,12 @@ def get_exception_from_error(error_code):
     if error_code in tmp:
         # logger.debug("REST ERROR: %s" % str(tmp[error_code]))
         return tmp[error_code]
-    else:
-        base_error = int(str(error_code)[0] + "00")
-        # logger.debug("REST ERROR: %s" % str(base_error))
-        try:
-            return tmp[base_error]
-        except KeyError:
-            return None
+    base_error = int(f"{str(error_code)[0]}00")
+    # logger.debug("REST ERROR: %s" % str(base_error))
+    try:
+        return tmp[base_error]
+    except KeyError:
+        return None
 
 
 class RestCommonMethods(object):
@@ -135,11 +134,7 @@ class RestCommonMethods(object):
         """Get information about the server: status, version, type and capabilities"""
         url = self.router.ping()
         # logger.debug("REST: ping: %s" % url)
-        if user and password:
-            # This can happen in "conan remote login" cmd. Instead of empty token, use HttpBasic
-            auth = HTTPBasicAuth(user, password)
-        else:
-            auth = self.auth
+        auth = HTTPBasicAuth(user, password) if user and password else self.auth
         ret = self.requester.get(url, auth=auth, headers=self.custom_headers, verify=self.verify_ssl)
 
         server_capabilities = ret.headers.get('X-Conan-Server-Capabilities', "")
@@ -173,16 +168,19 @@ class RestCommonMethods(object):
 
         content = response.content.decode()
         content_type = response.headers.get("Content-Type")
-        if content_type != 'application/json' and content_type != 'application/json; charset=utf-8':
+        if content_type not in [
+            'application/json',
+            'application/json; charset=utf-8',
+        ]:
             raise ConanException("%s\n\nResponse from remote is not json, but '%s'"
                                  % (content, content_type))
 
         try:  # This can fail, if some proxy returns 200 and an html message
             result = json.loads(content)
         except Exception:
-            raise ConanException("Remote responded with broken json: %s" % content)
+            raise ConanException(f"Remote responded with broken json: {content}")
         if not isinstance(result, dict):
-            raise ConanException("Unexpected server response %s" % result)
+            raise ConanException(f"Unexpected server response {result}")
         return result
 
     def upload_recipe(self, ref, files_to_upload):
@@ -204,9 +202,9 @@ class RestCommonMethods(object):
             try:
                 ref = RecipeReference.loads(reference)
             except TypeError as te:
-                raise ConanException("Unexpected response from server.\n"
-                                     "URL: `{}`\n"
-                                     "Expected an iterable, but got {}.".format(url, type(response)))
+                raise ConanException(
+                    f"Unexpected response from server.\nURL: `{url}`\nExpected an iterable, but got {type(response)}."
+                )
             if ref.user == "_":
                 ref.user = None
             if ref.channel == "_":
@@ -217,5 +215,4 @@ class RestCommonMethods(object):
     def search_packages(self, ref):
         """Client is filtering by the query"""
         url = self.router.search_packages(ref)
-        package_infos = self.get_json(url)
-        return package_infos
+        return self.get_json(url)

@@ -50,7 +50,7 @@ class _Remotes:
 
     def rename(self, remote_name, new_remote_name):
         if new_remote_name in self._remotes:
-            raise ConanException("Remote '%s' already exists" % new_remote_name)
+            raise ConanException(f"Remote '{new_remote_name}' already exists")
 
         r = self[remote_name]
         r._name = new_remote_name
@@ -88,11 +88,11 @@ class _Remotes:
         for r in self._remotes.values():
             if r is not current and r.url == url:
                 msg = f"Remote url already existing in remote '{r.name}'. " \
-                      f"Having different remotes with same URL is not recommended."
+                          f"Having different remotes with same URL is not recommended."
                 if not force:
-                    raise ConanException(msg + " Use '--force' to override.")
+                    raise ConanException(f"{msg} Use '--force' to override.")
                 else:
-                    ConanOutput().warning(msg + " Adding duplicated remote url because '--force'.")
+                    ConanOutput().warning(f"{msg} Adding duplicated remote url because '--force'.")
 
     def update(self, remote_name, url=None, secure=None, disabled=None, index=None, force=False):
         remote = self[remote_name]
@@ -134,8 +134,9 @@ class RemoteRegistry(object):
                                      "https://center.conan.io")
             address = urlparse(url)
             if not all([address.scheme, address.netloc]):
-                self._output.warning("The URL '%s' is invalid. It must contain scheme and hostname."
-                                     % url)
+                self._output.warning(
+                    f"The URL '{url}' is invalid. It must contain scheme and hostname."
+                )
         else:
             self._output.warning("The URL is empty. It must contain scheme and hostname.")
 
@@ -155,8 +156,7 @@ class RemoteRegistry(object):
 
     def read(self, remote_name):
         remotes = self._load_remotes()
-        ret = remotes[remote_name]
-        return ret
+        return remotes[remote_name]
 
     def add(self, remote: Remote, force=False, index=None):
         self._validate_url(remote.url)

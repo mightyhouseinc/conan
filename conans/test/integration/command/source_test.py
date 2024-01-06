@@ -89,9 +89,9 @@ class ConanLib(ConanFile):
         # Path with conanfile.txt
         client.run("source conanfile.txt", assert_error=True)
         self.assertIn(
-            "A conanfile.py is needed, %s is not acceptable"
-            % os.path.join(client.current_folder, "conanfile.txt"),
-            client.out)
+            f'A conanfile.py is needed, {os.path.join(client.current_folder, "conanfile.txt")} is not acceptable',
+            client.out,
+        )
 
     def test_source_local_cwd(self):
         conanfile = '''
@@ -112,7 +112,9 @@ class ConanLib(ConanFile):
         client.run("install .")
         client.run("source .")
         self.assertIn("conanfile.py (hello/0.1): Calling source()", client.out)
-        self.assertIn("conanfile.py (hello/0.1): cwd=>%s" % client.current_folder, client.out)
+        self.assertIn(
+            f"conanfile.py (hello/0.1): cwd=>{client.current_folder}", client.out
+        )
 
     def test_local_source(self):
         conanfile = '''

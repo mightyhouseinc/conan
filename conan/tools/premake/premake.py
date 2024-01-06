@@ -13,7 +13,7 @@ class Premake(object):
                         '14': '2015',
                         '15': '2017',
                         '16': '2019'}
-            premake_command = "premake5 vs%s" % _visuals.get(str(self._conanfile.settings.compiler.version))
+            premake_command = f"premake5 vs{_visuals.get(str(self._conanfile.settings.compiler.version))}"
             self._conanfile.run(premake_command)
         elif "msvc" in self._conanfile.settings.compiler:
             _visuals = {'14.0': '2005',
@@ -27,13 +27,13 @@ class Premake(object):
                         '19.2': '2019'}
             # generate VS2017 versions
             for i in range(0,7):
-                ver = '19.1' + str(i)
+                ver = f'19.1{str(i)}'
                 _visuals[ver] = '2017'
             # generate VS2019 versions
             for i in range(0,10):
-                ver = '19.2' + str(i)
+                ver = f'19.2{str(i)}'
                 _visuals[ver] = '2019'
-            premake_command = "premake5 vs%s" % _visuals.get(str(self._conanfile.settings.compiler.version))
+            premake_command = f"premake5 vs{_visuals.get(str(self._conanfile.settings.compiler.version))}"
             self._conanfile.run(premake_command)
         else:
             self._conanfile.run("premake5 gmake2")

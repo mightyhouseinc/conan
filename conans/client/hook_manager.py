@@ -19,8 +19,9 @@ class HookManager:
         self._load_hooks()  # A bit dirty, but avoid breaking tests
 
     def execute(self, method_name, conanfile):
-        assert method_name in valid_hook_methods, \
-            "Method '{}' not in valid hooks methods".format(method_name)
+        assert (
+            method_name in valid_hook_methods
+        ), f"Method '{method_name}' not in valid hooks methods"
         hooks = self.hooks.get(method_name)
         if hooks is None:
             return
@@ -28,11 +29,12 @@ class HookManager:
             # TODO: This display_name is ugly, improve it
             display_name = conanfile.display_name
             try:
-                conanfile.display_name = "%s: [HOOK - %s] %s()" % (conanfile.display_name, name,
-                                                                   method_name)
+                conanfile.display_name = (
+                    f"{conanfile.display_name}: [HOOK - {name}] {method_name}()"
+                )
                 method(conanfile)
             except Exception as e:
-                raise ConanException("[HOOK - %s] %s(): %s" % (name, method_name, str(e)))
+                raise ConanException(f"[HOOK - {name}] {method_name}(): {str(e)}")
             finally:
                 conanfile.display_name = display_name
 
@@ -53,8 +55,7 @@ class HookManager:
         try:
             hook, _ = load_python_file(hook_path)
             for method in valid_hook_methods:
-                hook_method = getattr(hook, method, None)
-                if hook_method:
+                if hook_method := getattr(hook, method, None):
                     self.hooks.setdefault(method, []).append((hook_name, hook_method))
         except Exception as e:
-            raise ConanException("Error loading hook '%s': %s" % (hook_path, str(e)))
+            raise ConanException(f"Error loading hook '{hook_path}': {str(e)}")

@@ -66,10 +66,9 @@ class CMakeDeps(object):
         for common_name in common_names:
             suffix = self.build_context_suffix.get(common_name)
             if not suffix:
-                raise ConanException("The package '{}' exists both as 'require' and as "
-                                     "'build require'. You need to specify a suffix using the "
-                                     "'build_context_suffix' attribute at the CMakeDeps "
-                                     "generator.".format(common_name))
+                raise ConanException(
+                    f"The package '{common_name}' exists both as 'require' and as 'build require'. You need to specify a suffix using the 'build_context_suffix' attribute at the CMakeDeps generator."
+                )
 
         # Iterate all the transitive requires
         direct_configs = []
@@ -95,15 +94,17 @@ class CMakeDeps(object):
                 self._generate_files(require, dep, ret, find_module_mode=True)
 
             if require.direct:  # aggregate config information for user convenience
-                find_module_mode = True if cmake_find_mode == FIND_MODE_MODULE else False
+                find_module_mode = cmake_find_mode == FIND_MODE_MODULE
                 config = ConfigTemplate(self, require, dep, find_module_mode)
                 direct_configs.append(config)
 
         if direct_configs:
             # Some helpful verbose messages about generated files
             msg = ["CMakeDeps necessary find_package() and targets for your CMakeLists.txt"]
-            for config in direct_configs:
-                msg.append(f"    find_package({config.file_name})")
+            msg.extend(
+                f"    find_package({config.file_name})"
+                for config in direct_configs
+            )
             targets = ' '.join(c.root_target_name for c in direct_configs)
             msg.append(f"    target_link_libraries(... {targets})")
             if self._conanfile._conan_is_consumer:
@@ -183,9 +184,7 @@ class CMakeDeps(object):
         :return: "none" or "config" or "module" or "both" or "config" when not set
         """
         tmp = self.get_property("cmake_find_mode", dep)
-        if tmp is None:
-            return "config"
-        return tmp.lower()
+        return "config" if tmp is None else tmp.lower()
 
     def generate_aggregator(self):
         host = self._conanfile.dependencies.host
@@ -201,7 +200,7 @@ class CMakeDeps(object):
             cmake_find_mode = self.get_property("cmake_find_mode", dep)
             cmake_find_mode = cmake_find_mode or FIND_MODE_CONFIG
             cmake_find_mode = cmake_find_mode.lower()
-            find_module_mode = True if cmake_find_mode == FIND_MODE_MODULE else False
+            find_module_mode = cmake_find_mode == FIND_MODE_MODULE
             config = ConfigTemplate(self, require, dep, find_module_mode)
             configs.append(config)
 

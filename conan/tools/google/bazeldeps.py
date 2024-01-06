@@ -34,8 +34,9 @@ def _get_repository_name(dep):
 
 
 def _get_target_name(dep):
-    pkg_name = dep.cpp_info.get_property("bazel_target_name") or _get_package_reference_name(dep)
-    return pkg_name
+    return dep.cpp_info.get_property(
+        "bazel_target_name"
+    ) or _get_package_reference_name(dep)
 
 
 def _get_component_name(dep, comp_ref_name):
@@ -150,13 +151,17 @@ def _get_libs(dep, cpp_info=None) -> list:
 
 
 def _get_headers(cpp_info, package_folder_path):
-    return ['"{}/**"'.format(_relativize_path(path, package_folder_path))
-            for path in cpp_info.includedirs]
+    return [
+        f'"{_relativize_path(path, package_folder_path)}/**"'
+        for path in cpp_info.includedirs
+    ]
 
 
 def _get_includes(cpp_info, package_folder_path):
-    return ['"{}"'.format(_relativize_path(path, package_folder_path))
-            for path in cpp_info.includedirs]
+    return [
+        f'"{_relativize_path(path, package_folder_path)}"'
+        for path in cpp_info.includedirs
+    ]
 
 
 def _get_defines(cpp_info):
@@ -193,8 +198,7 @@ def _relativize_path(path, pattern):
         return path
     path_ = path.replace("\\", "/").replace("/./", "/")
     pattern_ = pattern.replace("\\", "/").replace("/./", "/")
-    match = re.match(pattern_, path_)
-    if match:
+    if match := re.match(pattern_, path_):
         matching = match[0]
         if path_.startswith(matching):
             path_ = path_.replace(matching, "").strip("/")

@@ -13,16 +13,13 @@ def cmake_layout(conanfile, generator=None, src_folder=".", build_folder="build"
     :param build_folder: Specify the name of the "base" build folder. The default is "build", but
                         if that folder name is used by the project, a different one can be defined
     """
-    gen = conanfile.conf.get("tools.cmake.cmaketoolchain:generator", default=generator)
-    if gen:
+    if gen := conanfile.conf.get(
+        "tools.cmake.cmaketoolchain:generator", default=generator
+    ):
         multi = "Visual" in gen or "Xcode" in gen or "Multi-Config" in gen
     else:
         compiler = conanfile.settings.get_safe("compiler")
-        if compiler == "msvc":
-            multi = True
-        else:
-            multi = False
-
+        multi = compiler == "msvc"
     subproject = conanfile.folders.subproject
     conanfile.folders.source = src_folder if not subproject else os.path.join(subproject, src_folder)
     try:
@@ -43,8 +40,8 @@ def cmake_layout(conanfile, generator=None, src_folder=".", build_folder="build"
     conanfile.cpp.source.includedirs = ["include"]
 
     if multi:
-        conanfile.cpp.build.libdirs = ["{}".format(build_type)]
-        conanfile.cpp.build.bindirs = ["{}".format(build_type)]
+        conanfile.cpp.build.libdirs = [f"{build_type}"]
+        conanfile.cpp.build.bindirs = [f"{build_type}"]
     else:
         conanfile.cpp.build.libdirs = ["."]
         conanfile.cpp.build.bindirs = ["."]
@@ -79,10 +76,11 @@ def get_build_folder_custom_vars(conanfile):
                 if var == "shared":
                     tmp = "shared" if value else "static"
                 else:
-                    tmp = "{}_{}".format(var, value)
+                    tmp = f"{var}_{value}"
         else:
-            raise ConanException("Invalid 'tools.cmake.cmake_layout:build_folder_vars' value, it has"
-                                 " to start with 'settings.' or 'options.': {}".format(s))
+            raise ConanException(
+                f"Invalid 'tools.cmake.cmake_layout:build_folder_vars' value, it has to start with 'settings.' or 'options.': {s}"
+            )
         if tmp:
             ret.append(tmp.lower())
 

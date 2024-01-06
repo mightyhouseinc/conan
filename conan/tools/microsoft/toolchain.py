@@ -83,8 +83,10 @@ class MSBuildToolchain(object):
                                'armv7': 'ARM',
                                'armv8': 'ARM64'}.get(settings.get_safe("arch")))]
 
-        name = "".join("_%s" % v for _, v in props if v is not None)
-        condition = " And ".join("'$(%s)' == '%s'" % (k, v) for k, v in props if v is not None)
+        name = "".join(f"_{v}" for _, v in props if v is not None)
+        condition = " And ".join(
+            f"'$({k})' == '{v}'" for k, v in props if v is not None
+        )
         return name.lower(), condition
 
     def generate(self):
@@ -96,7 +98,7 @@ class MSBuildToolchain(object):
         """
         check_duplicated_generator(self, self._conanfile)
         name, condition = self._name_condition(self._conanfile.settings)
-        config_filename = "conantoolchain{}.props".format(name)
+        config_filename = f"conantoolchain{name}.props"
         # Writing the props files
         self._write_config_toolchain(config_filename)
         self._write_main_toolchain(config_filename, condition)
@@ -109,36 +111,44 @@ class MSBuildToolchain(object):
     def _runtime_library(settings):
         compiler = settings.compiler
         runtime = settings.get_safe("compiler.runtime")
-        if compiler == "msvc" or compiler == "intel-cc":
-            build_type = settings.get_safe("build_type")
-            if build_type != "Debug":
-                runtime_library = {"static": "MultiThreaded",
-                                   "dynamic": "MultiThreadedDLL"}.get(runtime, "")
-            else:
-                runtime_library = {"static": "MultiThreadedDebug",
-                                   "dynamic": "MultiThreadedDebugDLL"}.get(runtime, "")
-        else:
-            runtime_library = {"MT": "MultiThreaded",
-                               "MTd": "MultiThreadedDebug",
-                               "MD": "MultiThreadedDLL",
-                               "MDd": "MultiThreadedDebugDLL"}.get(runtime, "")
-        return runtime_library
+        if compiler not in ["msvc", "intel-cc"]:
+            return {
+                "MT": "MultiThreaded",
+                "MTd": "MultiThreadedDebug",
+                "MD": "MultiThreadedDLL",
+                "MDd": "MultiThreadedDebugDLL",
+            }.get(runtime, "")
+        build_type = settings.get_safe("build_type")
+        return (
+            {"static": "MultiThreaded", "dynamic": "MultiThreadedDLL"}.get(
+                runtime, ""
+            )
+            if build_type != "Debug"
+            else {
+                "static": "MultiThreadedDebug",
+                "dynamic": "MultiThreadedDebugDLL",
+            }.get(runtime, "")
+        )
 
     @property
     def context_config_toolchain(self):
 
         def format_macro(key, value):
-            return '%s=%s' % (key, value) if value is not None else key
+            return f'{key}={value}' if value is not None else key
 
         cxxflags, cflags, defines, sharedlinkflags, exelinkflags = self._get_extra_flags()
-        preprocessor_definitions = "".join(["%s;" % format_macro(k, v)
-                                            for k, v in self.preprocessor_definitions.items()])
-        defines = preprocessor_definitions + "".join("%s;" % d for d in defines)
+        preprocessor_definitions = "".join(
+            [
+                f"{format_macro(k, v)};"
+                for k, v in self.preprocessor_definitions.items()
+            ]
+        )
+        defines = preprocessor_definitions + "".join(f"{d};" for d in defines)
         self.cxxflags.extend(cxxflags)
         self.cflags.extend(cflags)
         self.ldflags.extend(sharedlinkflags + exelinkflags)
 
-        cppstd = "stdcpp%s" % self.cppstd if self.cppstd else ""
+        cppstd = f"stdcpp{self.cppstd}" if self.cppstd else ""
         runtime_library = self.runtime_library
         toolset = self.toolset or ""
         compile_options = self._conanfile.conf.get("tools.microsoft.msbuildtoolchain:compile_options",
@@ -173,7 +183,7 @@ class MSBuildToolchain(object):
         config_filepath = os.path.join(self._conanfile.generators_folder, config_filename)
         config_props = Template(self._config_toolchain_props, trim_blocks=True,
                                 lstrip_blocks=True).render(**self.context_config_toolchain)
-        self._conanfile.output.info("MSBuildToolchain created %s" % config_filename)
+        self._conanfile.output.info(f"MSBuildToolchain created {config_filename}")
         save(config_filepath, config_props)
 
     def _write_main_toolchain(self, config_filename, condition):
@@ -202,7 +212,7 @@ class MSBuildToolchain(object):
         try:
             import_group = dom.getElementsByTagName('ImportGroup')[0]
         except Exception:
-            raise ConanException("Broken {}. Remove the file and try again".format(self.filename))
+            raise ConanException(f"Broken {self.filename}. Remove the file and try again")
         children = import_group.getElementsByTagName("Import")
         for node in children:
             if (config_filename == node.getAttribute("Project") and
@@ -216,7 +226,7 @@ class MSBuildToolchain(object):
 
         conan_toolchain = dom.toprettyxml()
         conan_toolchain = "\n".join(line for line in conan_toolchain.splitlines() if line.strip())
-        self._conanfile.output.info("MSBuildToolchain writing {}".format(self.filename))
+        self._conanfile.output.info(f"MSBuildToolchain writing {self.filename}")
         save(main_toolchain_path, conan_toolchain)
 
     def _get_extra_flags(self):

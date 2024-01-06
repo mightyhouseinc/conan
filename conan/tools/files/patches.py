@@ -17,9 +17,9 @@ class PatchLogHandler(logging.Handler):
     def emit(self, record):
         logstr = self.format(record)
         if record.levelno == logging.WARN:
-            self._scoped_output.warning("%s: %s" % (self.patchname, logstr))
+            self._scoped_output.warning(f"{self.patchname}: {logstr}")
         else:
-            self._scoped_output.info("%s: %s" % (self.patchname, logstr))
+            self._scoped_output.info(f"{self.patchname}: {logstr}")
 
 
 def patch(conanfile, base_path=None, patch_file=None, patch_string=None, strip=0, fuzz=False, **kwargs):
@@ -43,9 +43,9 @@ def patch(conanfile, base_path=None, patch_file=None, patch_string=None, strip=0
     patch_description = kwargs.get('patch_description')
 
     if patch_type or patch_description:
-        patch_type_str = ' ({})'.format(patch_type) if patch_type else ''
-        patch_description_str = ': {}'.format(patch_description) if patch_description else ''
-        conanfile.output.info('Apply patch{}{}'.format(patch_type_str, patch_description_str))
+        patch_type_str = f' ({patch_type})' if patch_type else ''
+        patch_description_str = f': {patch_description}' if patch_description else ''
+        conanfile.output.info(f'Apply patch{patch_type_str}{patch_description_str}')
 
     patchlog = logging.getLogger("patch_ng")
     patchlog.handlers = []
@@ -60,12 +60,14 @@ def patch(conanfile, base_path=None, patch_file=None, patch_string=None, strip=0
         patchset = patch_ng.fromstring(patch_string.encode())
 
     if not patchset:
-        raise ConanException("Failed to parse patch: %s" % (patch_file if patch_file else "string"))
+        raise ConanException(
+            f'Failed to parse patch: {patch_file if patch_file else "string"}'
+        )
 
     # trick *1
     root = os.path.join(conanfile.source_folder, base_path) if base_path else conanfile.source_folder
     if not patchset.apply(strip=strip, root=root, fuzz=fuzz):
-        raise ConanException("Failed to apply patch: %s" % patch_file)
+        raise ConanException(f"Failed to apply patch: {patch_file}")
 
 
 def apply_conandata_patches(conanfile):
@@ -103,9 +105,7 @@ def apply_conandata_patches(conanfile):
             patch(conanfile, patch_file=patch_file_path, **entry)
         elif "patch_string" in it:
             patch(conanfile, **it)
-        elif "patch_user" in it:
-            pass  # This will be managed directly by users, can be a command or a script execution
-        else:
+        elif "patch_user" not in it:
             raise ConanException("The 'conandata.yml' file needs a 'patch_file' or 'patch_string'"
                                  " entry for every patch to be applied")
 
@@ -132,8 +132,7 @@ def export_conandata_patches(conanfile):
     else:
         raise ConanException("conandata.yml 'patches' should be a list or a dict {version: list}")
     for it in entries:
-        patch_file = it.get("patch_file")
-        if patch_file:
+        if patch_file := it.get("patch_file"):
             src = os.path.join(conanfile.recipe_folder, patch_file)
             dst = os.path.join(conanfile.export_sources_folder, patch_file)
             mkdir(os.path.dirname(dst))

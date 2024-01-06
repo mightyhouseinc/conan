@@ -692,14 +692,14 @@ def test_exclude_code_analysis(pattern, exclude_a, exclude_b):
 
     if exclude_a:
         inc = "$(ConanpkgaIncludeDirectories)"
-        ca_exclude = "<CAExcludePath>%s;$(CAExcludePath)</CAExcludePath>" % inc
+        ca_exclude = f"<CAExcludePath>{inc};$(CAExcludePath)</CAExcludePath>"
         assert ca_exclude in depa
     else:
         assert "CAExcludePath" not in depa
 
     if exclude_b:
         inc = "$(ConanpkgbIncludeDirectories)"
-        ca_exclude = "<CAExcludePath>%s;$(CAExcludePath)</CAExcludePath>" % inc
+        ca_exclude = f"<CAExcludePath>{inc};$(CAExcludePath)</CAExcludePath>"
         assert ca_exclude in depb
     else:
         assert "CAExcludePath" not in depb

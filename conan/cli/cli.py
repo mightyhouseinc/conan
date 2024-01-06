@@ -29,8 +29,9 @@ class Cli:
     _builtin_commands = None  # Caching the builtin commands, no need to load them over and over
 
     def __init__(self, conan_api):
-        assert isinstance(conan_api, ConanAPI), \
-            "Expected 'Conan' type, got '{}'".format(type(conan_api))
+        assert isinstance(
+            conan_api, ConanAPI
+        ), f"Expected 'Conan' type, got '{type(conan_api)}'"
         self._conan_api = conan_api
         self._groups = defaultdict(list)
         self._commands = {}
@@ -40,7 +41,7 @@ class Cli:
             conan_cmd_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "commands")
             for module in pkgutil.iter_modules([conan_cmd_path]):
                 module_name = module[1]
-                self._add_command("conan.cli.commands.{}".format(module_name), module_name)
+                self._add_command(f"conan.cli.commands.{module_name}", module_name)
             Cli._builtin_commands = self._commands.copy()
         else:
             self._commands = Cli._builtin_commands.copy()
@@ -87,15 +88,16 @@ class Cli:
                 self._groups[command_wrapper.group].append(name)
             for name, value in getmembers(imported_module):
                 if isinstance(value, ConanSubCommand):
-                    if name.startswith("{}_".format(method_name)):
+                    if name.startswith(f"{method_name}_"):
                         command_wrapper.add_subcommand(value)
                     else:
-                        raise ConanException("The name for the subcommand method should "
-                                             "begin with the main command name + '_'. "
-                                             "i.e. {}_<subcommand_name>".format(method_name))
+                        raise ConanException(
+                            f"The name for the subcommand method should begin with the main command name + '_'. i.e. {method_name}_<subcommand_name>"
+                        )
         except AttributeError:
-            raise ConanException("There is no {} method defined in {}".format(method_name,
-                                                                              import_path))
+            raise ConanException(
+                f"There is no {method_name} method defined in {import_path}"
+            )
 
     def _print_similar(self, command):
         """ Looks for similar commands and prints them if found.
@@ -113,7 +115,7 @@ class Cli:
             output.info("The most similar command is")
 
         for match in matches:
-            output.info("    %s" % match)
+            output.info(f"    {match}")
 
         output.writeln("")
 
@@ -164,17 +166,19 @@ class Cli:
             command = self._commands[command_argument]
         except KeyError as exc:
             if command_argument in ["-v", "--version"]:
-                cli_out_write("Conan version %s" % client_version)
+                cli_out_write(f"Conan version {client_version}")
                 return
 
             if command_argument in ["-h", "--help"]:
                 self._output_help_cli()
                 return
 
-            output.info("'%s' is not a Conan command. See 'conan --help'." % command_argument)
+            output.info(
+                f"'{command_argument}' is not a Conan command. See 'conan --help'."
+            )
             output.info("")
             self._print_similar(command_argument)
-            raise ConanException("Unknown command %s" % str(exc))
+            raise ConanException(f"Unknown command {str(exc)}")
 
         try:
             command.run(self._conan_api, args[0][1:])
@@ -189,15 +193,16 @@ class Cli:
     def _conan2_migrate_recipe_msg(exception):
         message = str(exception)
 
-        result = re.search(r"Package '(.*)' not resolved: .*: Cannot load recipe", message)
-        if result:
+        if result := re.search(
+            r"Package '(.*)' not resolved: .*: Cannot load recipe", message
+        ):
             pkg = result.group(1)
             error = "*********************************************************\n" \
-                    f"Recipe '{pkg}' seems broken.\n" \
-                    f"It is possible that this recipe is not Conan 2.0 ready\n"\
-                    "If the recipe comes from ConanCenter, report it at https://github.com/conan-io/conan-center-index/issues\n" \
-                    "If it is your recipe, check if it is updated to 2.0\n" \
-                    "*********************************************************\n"
+                        f"Recipe '{pkg}' seems broken.\n" \
+                        f"It is possible that this recipe is not Conan 2.0 ready\n"\
+                        "If the recipe comes from ConanCenter, report it at https://github.com/conan-io/conan-center-index/issues\n" \
+                        "If it is your recipe, check if it is updated to 2.0\n" \
+                        "*********************************************************\n"
             ConanOutput().writeln(error, fg=Color.BRIGHT_MAGENTA)
 
     @staticmethod

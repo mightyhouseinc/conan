@@ -4,7 +4,7 @@ import os
 def load_plugin(server_folder, plugin_type, plugin_name):
     try:
         from pluginbase import PluginBase
-        plugin_base = PluginBase(package="plugins/%s" % plugin_type)
+        plugin_base = PluginBase(package=f"plugins/{plugin_type}")
         plugins_dir = os.path.join(server_folder, "plugins", plugin_type)
         plugin_source = plugin_base.make_plugin_source(
                         searchpath=[plugins_dir])
@@ -14,7 +14,7 @@ def load_plugin(server_folder, plugin_type, plugin_name):
         plugin.plugin_source = plugin_source
         return plugin
     except Exception:
-        print("Error loading %s plugin '%s'" % (plugin_type, plugin_name))
+        print(f"Error loading {plugin_type} plugin '{plugin_name}'")
         raise
 
 

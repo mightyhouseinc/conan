@@ -27,9 +27,8 @@ def check_graph_provides(dep_graph):
                 existing = node.transitive_deps.get(new_req)
                 if existing is not None:
                     raise GraphProvidesError(existing.node, dep_node)
+                existing_provide = provides.get(new_req)
+                if existing_provide is not None:
+                    raise GraphProvidesError(existing_provide, dep_node)
                 else:
-                    existing_provide = provides.get(new_req)
-                    if existing_provide is not None:
-                        raise GraphProvidesError(existing_provide, dep_node)
-                    else:
-                        provides[new_req] = dep_node
+                    provides[new_req] = dep_node

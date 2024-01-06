@@ -46,15 +46,14 @@ def cache_path(conan_api: ConanAPI, parser, subparser, *args):
             path = conan_api.cache.recipe_metadata_path(ref)
         else:
             raise ConanException(f"'--folder {args.folder}' requires a valid package reference")
+    elif args.folder is None:
+        path = conan_api.cache.package_path(pref)
+    elif args.folder == "build":
+        path = conan_api.cache.build_path(pref)
+    elif args.folder == "metadata":
+        path = conan_api.cache.package_metadata_path(pref)
     else:
-        if args.folder is None:
-            path = conan_api.cache.package_path(pref)
-        elif args.folder == "build":
-            path = conan_api.cache.build_path(pref)
-        elif args.folder == "metadata":
-            path = conan_api.cache.package_metadata_path(pref)
-        else:
-            raise ConanException(f"'--folder {args.folder}' requires a recipe reference")
+        raise ConanException(f"'--folder {args.folder}' requires a recipe reference")
     return path
 
 

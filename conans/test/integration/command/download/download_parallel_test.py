@@ -11,7 +11,9 @@ def test_basic_parallel_download():
 
     package_ids = []
     for i in range(counter):
-        client.run("create . --name=pkg --version=0.1 --user=user --channel=testing -o pkg/*:myoption=%s" % i)
+        client.run(
+            f"create . --name=pkg --version=0.1 --user=user --channel=testing -o pkg/*:myoption={i}"
+        )
         package_id = client.created_package_id("pkg/0.1@user/testing")
         package_ids.append(package_id)
     client.run("upload * --confirm -r default")
@@ -19,7 +21,10 @@ def test_basic_parallel_download():
 
     # Lets download the packages
     client.run("download pkg/0.1@user/testing#*:* -r default")
-    assert "Downloading recipes in %s parallel threads" % threads in client.out
-    assert "Downloading binary packages in %s parallel threads" % threads in client.out
+    assert f"Downloading recipes in {threads} parallel threads" in client.out
+    assert (
+        f"Downloading binary packages in {threads} parallel threads"
+        in client.out
+    )
     for package_id in package_ids:
         assert f"pkg/0.1@user/testing: Package installed {package_id}" in client.out

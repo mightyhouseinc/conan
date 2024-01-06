@@ -58,11 +58,11 @@ def client():
 @pytest.mark.parametrize("build_type,shared", [("Release", False), ("Debug", True)])
 @pytest.mark.tool("ninja")
 def test_locally_build_linux(build_type, shared, client):
-    settings = "-s os=Linux -s arch=x86_64 -s build_type={} -o hello/*:shared={}".format(build_type,
-                                                                                       shared)
-    client.run("install . {}".format(settings))
-    client.run_command('cmake . -G "Ninja" -DCMAKE_TOOLCHAIN_FILE={} -DCMAKE_BUILD_TYPE={}'
-                       .format(CMakeToolchain.filename, build_type))
+    settings = f"-s os=Linux -s arch=x86_64 -s build_type={build_type} -o hello/*:shared={shared}"
+    client.run(f"install . {settings}")
+    client.run_command(
+        f'cmake . -G "Ninja" -DCMAKE_TOOLCHAIN_FILE={CMakeToolchain.filename} -DCMAKE_BUILD_TYPE={build_type}'
+    )
 
     client.run_command('ninja')
     if shared:
@@ -74,9 +74,9 @@ def test_locally_build_linux(build_type, shared, client):
     check_exe_run(client.out, ["main", "hello"], "gcc", None, build_type, "x86_64", cppstd=None)
 
     # create should also work
-    client.run("create . --name=hello --version=1.0 {}".format(settings))
+    client.run(f"create . --name=hello --version=1.0 {settings}")
     assert 'cmake -G "Ninja"' in client.out
-    assert "main: {}!".format(build_type) in client.out
+    assert f"main: {build_type}!" in client.out
     client.run(f"install --requires=hello/1.0@ --deployer=full_deploy -of=mydeploy {settings}")
     deploy_path = os.path.join(client.current_folder, "mydeploy", "full_deploy", "host", "hello", "1.0",
                                build_type, "x86_64")
@@ -156,14 +156,13 @@ def test_locally_build_msvc_toolset(client):
 @pytest.mark.tool("ninja")
 def test_locally_build_gcc(build_type, shared, client):
     # FIXME: Note the gcc version is still incorrect
-    gcc = ("-s os=Windows -s compiler=gcc -s compiler.version=4.9 -s compiler.libcxx=libstdc++ "
-           "-s arch=x86_64 -s build_type={}".format(build_type))
+    gcc = f"-s os=Windows -s compiler=gcc -s compiler.version=4.9 -s compiler.libcxx=libstdc++ -s arch=x86_64 -s build_type={build_type}"
 
-    client.run("install . {} -o hello/*:shared={}".format(gcc, shared))
+    client.run(f"install . {gcc} -o hello/*:shared={shared}")
 
-    client.run_command('cmake . -G "Ninja" '
-                       '-DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake '
-                       '-DCMAKE_BUILD_TYPE={}'.format(build_type))
+    client.run_command(
+        f'cmake . -G "Ninja" -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE={build_type}'
+    )
 
     libname = "mylibrary.dll" if shared else "libmylibrary.a"
     client.run_command("ninja")
@@ -179,10 +178,12 @@ def test_locally_build_gcc(build_type, shared, client):
 @pytest.mark.parametrize("build_type,shared", [("Release", False), ("Debug", True)])
 @pytest.mark.tool("ninja")
 def test_locally_build_macos(build_type, shared, client):
-    client.run('install . -s os=Macos -s arch=x86_64 -s build_type={} -o hello/*:shared={}'
-               .format(build_type, shared))
-    client.run_command('cmake . -G"Ninja" -DCMAKE_TOOLCHAIN_FILE={} -DCMAKE_BUILD_TYPE={}'
-                       .format(CMakeToolchain.filename, build_type))
+    client.run(
+        f'install . -s os=Macos -s arch=x86_64 -s build_type={build_type} -o hello/*:shared={shared}'
+    )
+    client.run_command(
+        f'cmake . -G"Ninja" -DCMAKE_TOOLCHAIN_FILE={CMakeToolchain.filename} -DCMAKE_BUILD_TYPE={build_type}'
+    )
 
     client.run_command('ninja')
     if shared:
@@ -190,7 +191,7 @@ def test_locally_build_macos(build_type, shared, client):
     else:
         assert "Linking CXX static library libmylibrary.a" in client.out
 
-    command_str = 'DYLD_LIBRARY_PATH="%s" ./myapp' % client.current_folder
+    command_str = f'DYLD_LIBRARY_PATH="{client.current_folder}" ./myapp'
     client.run_command(command_str)
     check_exe_run(client.out, ["main", "hello"], "apple-clang", None, build_type, "x86_64",
                   cppstd=None)

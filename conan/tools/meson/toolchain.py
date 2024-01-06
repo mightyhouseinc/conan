@@ -128,8 +128,7 @@ class MesonToolchain(object):
 
         self._b_vscrt = None
         if compiler in ("msvc", "clang"):
-            vscrt = msvc_runtime_flag(self._conanfile)
-            if vscrt:
+            if vscrt := msvc_runtime_flag(self._conanfile):
                 self._b_vscrt = str(vscrt).lower()
 
         #: Dict-like object that defines Meson``properties`` with ``key=value`` format
@@ -168,13 +167,12 @@ class MesonToolchain(object):
             if is_apple_os(self._conanfile):  # default cross-compiler in Apple is common
                 default_comp = "clang"
                 default_comp_cpp = "clang++"
-        else:
-            if "clang" in compiler:
-                default_comp = "clang"
-                default_comp_cpp = "clang++"
-            elif compiler == "gcc":
-                default_comp = "gcc"
-                default_comp_cpp = "g++"
+        elif "clang" in compiler:
+            default_comp = "clang"
+            default_comp_cpp = "clang++"
+        elif compiler == "gcc":
+            default_comp = "gcc"
+            default_comp_cpp = "g++"
         if "Visual" in compiler or compiler == "msvc":
             default_comp = "cl"
             default_comp_cpp = "cl"
@@ -318,7 +316,7 @@ class MesonToolchain(object):
         self.objcpp_link_args = self._get_env_list(build_env.get('LDFLAGS', []))
 
     def _resolve_android_cross_compilation(self):
-        if not self.cross_build or not self.cross_build["host"]["system"] == "android":
+        if not self.cross_build or self.cross_build["host"]["system"] != "android":
             return
 
         ndk_path = self._conanfile.conf.get("tools.android:ndk_path")
@@ -328,14 +326,18 @@ class MesonToolchain(object):
 
         arch = self._conanfile.settings.get_safe("arch")
         os_build = self.cross_build["build"]["system"]
-        ndk_bin = os.path.join(ndk_path, "toolchains", "llvm", "prebuilt", "{}-x86_64".format(os_build), "bin")
+        ndk_bin = os.path.join(
+            ndk_path, "toolchains", "llvm", "prebuilt", f"{os_build}-x86_64", "bin"
+        )
         android_api_level = self._conanfile.settings.get_safe("os.api_level")
         android_target = {'armv7': 'armv7a-linux-androideabi',
                           'armv8': 'aarch64-linux-android',
                           'x86': 'i686-linux-android',
                           'x86_64': 'x86_64-linux-android'}.get(arch)
-        self.c = os.path.join(ndk_bin, "{}{}-clang".format(android_target, android_api_level))
-        self.cpp = os.path.join(ndk_bin, "{}{}-clang++".format(android_target, android_api_level))
+        self.c = os.path.join(ndk_bin, f"{android_target}{android_api_level}-clang")
+        self.cpp = os.path.join(
+            ndk_bin, f"{android_target}{android_api_level}-clang++"
+        )
         self.ar = os.path.join(ndk_bin, "llvm-ar")
 
     def _get_extra_flags(self):
@@ -345,7 +347,9 @@ class MesonToolchain(object):
         sharedlinkflags = self._conanfile.conf.get("tools.build:sharedlinkflags", default=[], check_type=list)
         exelinkflags = self._conanfile.conf.get("tools.build:exelinkflags", default=[], check_type=list)
         linker_scripts = self._conanfile.conf.get("tools.build:linker_scripts", default=[], check_type=list)
-        linker_script_flags = ['-T"' + linker_script + '"' for linker_script in linker_scripts]
+        linker_script_flags = [
+            f'-T"{linker_script}"' for linker_script in linker_scripts
+        ]
         return {
             "cxxflags": cxxflags,
             "cflags": cflags,
@@ -440,8 +444,7 @@ class MesonToolchain(object):
         :return: ``str`` whole Meson context content.
         """
         context = self._context()
-        content = Template(self._meson_file_template).render(context)
-        return content
+        return Template(self._meson_file_template).render(context)
 
     def generate(self):
         """

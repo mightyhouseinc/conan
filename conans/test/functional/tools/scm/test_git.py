@@ -46,7 +46,7 @@ class TestGitBasicCapture:
         c.save({"conanfile.py": self.conanfile})
         commit = c.init_git_repo()
         c.run("export .")
-        assert "pkg/0.1: COMMIT: {}".format(commit) in c.out
+        assert f"pkg/0.1: COMMIT: {commit}" in c.out
         assert "pkg/0.1: URL: None" in c.out
         assert "pkg/0.1: COMMIT IN REMOTE: False" in c.out
         assert "pkg/0.1: DIRTY: False" in c.out
@@ -59,12 +59,12 @@ class TestGitBasicCapture:
         url, commit = create_local_git_repo(files={"conanfile.py": self.conanfile}, folder=folder)
 
         c = TestClient()
-        c.run_command('git clone "{}" myclone'.format(folder))
+        c.run_command(f'git clone "{folder}" myclone')
         with c.chdir("myclone"):
             c.run("export .")
-            assert "pkg/0.1: COMMIT: {}".format(commit) in c.out
-            assert "pkg/0.1: REPO_COMMIT: {}".format(commit) in c.out
-            assert "pkg/0.1: URL: {}".format(url) in c.out
+            assert f"pkg/0.1: COMMIT: {commit}" in c.out
+            assert f"pkg/0.1: REPO_COMMIT: {commit}" in c.out
+            assert f"pkg/0.1: URL: {url}" in c.out
             assert "pkg/0.1: COMMIT IN REMOTE: True" in c.out
             assert "pkg/0.1: DIRTY: False" in c.out
 
@@ -75,20 +75,20 @@ class TestGitBasicCapture:
         url = git_create_bare_repo()
 
         c = TestClient()
-        c.run_command('git clone "{}" myclone'.format(url))
+        c.run_command(f'git clone "{url}" myclone')
         with c.chdir("myclone"):
             c.save({"conanfile.py": self.conanfile + "\n# some coment!"})
             new_commit = git_add_changes_commit(c.current_folder)
 
             c.run("export .")
-            assert "pkg/0.1: COMMIT: {}".format(new_commit) in c.out
-            assert "pkg/0.1: URL: {}".format(url) in c.out
+            assert f"pkg/0.1: COMMIT: {new_commit}" in c.out
+            assert f"pkg/0.1: URL: {url}" in c.out
             assert "pkg/0.1: COMMIT IN REMOTE: False" in c.out
             assert "pkg/0.1: DIRTY: False" in c.out
             c.run_command("git push")
             c.run("export .")
-            assert "pkg/0.1: COMMIT: {}".format(new_commit) in c.out
-            assert "pkg/0.1: URL: {}".format(url) in c.out
+            assert f"pkg/0.1: COMMIT: {new_commit}" in c.out
+            assert f"pkg/0.1: URL: {url}" in c.out
             assert "pkg/0.1: COMMIT IN REMOTE: True" in c.out
             assert "pkg/0.1: DIRTY: False" in c.out
 
@@ -103,15 +103,15 @@ class TestGitBasicCapture:
         commit = c.init_git_repo()
         c.save({"other/myfile.txt": "change content"})
         c.run("export subfolder")
-        assert "pkg/0.1: COMMIT: {}".format(commit) in c.out
-        assert "pkg/0.1: REPO_COMMIT: {}".format(commit) in c.out
+        assert f"pkg/0.1: COMMIT: {commit}" in c.out
+        assert f"pkg/0.1: REPO_COMMIT: {commit}" in c.out
         assert "pkg/0.1: URL: None" in c.out
         assert "pkg/0.1: COMMIT IN REMOTE: False" in c.out
         assert "pkg/0.1: DIRTY: False" in c.out
         commit2 = git_add_changes_commit(c.current_folder, msg="fix")
         c.run("export subfolder")
-        assert "pkg/0.1: COMMIT: {}".format(commit) in c.out
-        assert "pkg/0.1: REPO_COMMIT: {}".format(commit2) in c.out
+        assert f"pkg/0.1: COMMIT: {commit}" in c.out
+        assert f"pkg/0.1: REPO_COMMIT: {commit2}" in c.out
         assert "pkg/0.1: URL: None" in c.out
         assert "pkg/0.1: COMMIT IN REMOTE: False" in c.out
         assert "pkg/0.1: DIRTY: False" in c.out
@@ -147,7 +147,7 @@ class TestGitCaptureSCM:
         commit = c.init_git_repo()
         c.run("export .")
         assert "This revision will not be buildable in other computer" in c.out
-        assert "pkg/0.1: SCM COMMIT: {}".format(commit) in c.out
+        assert f"pkg/0.1: SCM COMMIT: {commit}" in c.out
         assert "pkg/0.1: SCM URL: {}".format(c.current_folder.replace("\\", "/")) in c.out
 
         c.save({"conanfile.py": self.conanfile + "\n# something...."})
@@ -162,11 +162,11 @@ class TestGitCaptureSCM:
         url, commit = create_local_git_repo(files={"conanfile.py": self.conanfile}, folder=folder)
 
         c = TestClient()
-        c.run_command('git clone "{}" myclone'.format(folder))
+        c.run_command(f'git clone "{folder}" myclone')
         with c.chdir("myclone"):
             c.run("export .")
-            assert "pkg/0.1: SCM COMMIT: {}".format(commit) in c.out
-            assert "pkg/0.1: SCM URL: {}".format(url) in c.out
+            assert f"pkg/0.1: SCM COMMIT: {commit}" in c.out
+            assert f"pkg/0.1: SCM URL: {url}" in c.out
 
     def test_capture_remote_pushed_commit(self):
         """
@@ -175,20 +175,20 @@ class TestGitCaptureSCM:
         url = git_create_bare_repo()
 
         c = TestClient()
-        c.run_command('git clone "{}" myclone'.format(url))
+        c.run_command(f'git clone "{url}" myclone')
         with c.chdir("myclone"):
             c.save({"conanfile.py": self.conanfile + "\n# some coment!"})
             new_commit = git_add_changes_commit(c.current_folder)
 
             c.run("export .")
             assert "This revision will not be buildable in other computer" in c.out
-            assert "pkg/0.1: SCM COMMIT: {}".format(new_commit) in c.out
+            assert f"pkg/0.1: SCM COMMIT: {new_commit}" in c.out
             # NOTE: commit not pushed yet, so locally is the current folder
             assert "pkg/0.1: SCM URL: {}".format(c.current_folder.replace("\\", "/")) in c.out
             c.run_command("git push")
             c.run("export .")
-            assert "pkg/0.1: SCM COMMIT: {}".format(new_commit) in c.out
-            assert "pkg/0.1: SCM URL: {}".format(url) in c.out
+            assert f"pkg/0.1: SCM COMMIT: {new_commit}" in c.out
+            assert f"pkg/0.1: SCM URL: {url}" in c.out
 
     def test_capture_commit_modified_config(self):
         """
@@ -201,8 +201,8 @@ class TestGitCaptureSCM:
         with c.chdir(folder):
             c.run_command("git config --local status.branch true")
             c.run("export .")
-            assert "pkg/0.1: SCM COMMIT: {}".format(commit) in c.out
-            assert "pkg/0.1: SCM URL: {}".format(url) in c.out
+            assert f"pkg/0.1: SCM COMMIT: {commit}" in c.out
+            assert f"pkg/0.1: SCM URL: {url}" in c.out
 
     def test_capture_commit_modified_config_untracked(self):
         """
@@ -342,7 +342,7 @@ class TestGitBasicClone:
         assert "pkg/0.1: MYFILE: myheader!" in c.out
 
         # It also works in local flow, not running in msys2 at all
-        c.run(f"source .")
+        c.run("source .")
         assert "conanfile.py (pkg/0.1): MYCMAKE: mycmake" in c.out
         assert "conanfile.py (pkg/0.1): MYFILE: myheader!" in c.out
         assert c.load("source/src/myfile.h") == "myheader!"
@@ -498,7 +498,7 @@ class TestGitBasicSCMFlow:
                                                    "CMakeLists.txt": "mycmake"}, folder=folder)
 
         c = TestClient(default_server_user=True)
-        c.run_command('git clone "{}" .'.format(url))
+        c.run_command(f'git clone "{url}" .')
         c.run("create .")
         assert "pkg/0.1: MYCMAKE: mycmake" in c.out
         assert "pkg/0.1: MYFILE: myheader!" in c.out
@@ -527,7 +527,7 @@ class TestGitBasicSCMFlow:
         """
         url = git_create_bare_repo()
         c = TestClient(default_server_user=True)
-        c.run_command('git clone "{}" .'.format(url))
+        c.run_command(f'git clone "{url}" .')
         c.save({"conanfile.py": self.conanfile,
                 "src/myfile.h": "myheader!",
                 "CMakeLists.txt": "mycmake"})
@@ -592,7 +592,7 @@ class TestGitBasicSCMFlowSubfolder:
                                                    "CMakeLists.txt": "mycmake"}, folder=folder)
 
         c = TestClient(default_server_user=True)
-        c.run_command('git clone "{}" .'.format(url))
+        c.run_command(f'git clone "{url}" .')
         c.run("create conan")
         assert "pkg/0.1: MYCMAKE: mycmake" in c.out
         assert "pkg/0.1: MYFILE: myheader!" in c.out
@@ -673,7 +673,7 @@ class TestGitMonorepoSCMFlow:
                                             folder=folder)
 
         c = TestClient(default_server_user=True)
-        c.run_command('git clone "{}" .'.format(url))
+        c.run_command(f'git clone "{url}" .')
         c.run("create sub1")
         commit = re.search(r"CAPTURING COMMIT: (\S+)!!!", str(c.out)).group(1)
         assert "pkg1/0.1: MYCMAKE-BUILD: mycmake1!" in c.out
@@ -687,13 +687,13 @@ class TestGitMonorepoSCMFlow:
 
         # Exporting again sub1, gives us exactly the same revision as before
         c.run("export sub1")
-        assert "CAPTURING COMMIT: {}".format(commit) in c.out
+        assert f"CAPTURING COMMIT: {commit}" in c.out
         c.run("upload * -c -r=default")
 
         # use another fresh client
         c2 = TestClient(servers=c.servers)
         c2.run("install --requires=pkg2/0.1@ --build=*")
-        assert "pkg1/0.1: Checkout: {}".format(commit) in c2.out
+        assert f"pkg1/0.1: Checkout: {commit}" in c2.out
         assert "pkg1/0.1: MYCMAKE-BUILD: mycmake1!" in c2.out
         assert "pkg1/0.1: MYFILE-BUILD: myheader1!" in c2.out
         assert "pkg2/0.1: MYCMAKE-BUILD: mycmake2!" in c2.out
@@ -821,7 +821,7 @@ class TestConanFileSubfolder:
                 "src/myfile.h": "myheader"})
         commit = c.init_git_repo()
         c.run("export conan")
-        assert "pkg/0.1: COMMIT: {}".format(commit) in c.out
+        assert f"pkg/0.1: COMMIT: {commit}" in c.out
         assert "pkg/0.1: URL: {}".format(c.current_folder.replace("\\", "/")) in c.out
 
         c.run("create conan")
@@ -983,11 +983,11 @@ class TestGitShallowTagClone:
             c.run_command('git tag 1.0.0')
 
         # Do a shallow clone of our tag
-        c.run_command('git clone --depth=1 --branch 1.0.0 "{}" myclone'.format(folder))
+        c.run_command(f'git clone --depth=1 --branch 1.0.0 "{folder}" myclone')
         with c.chdir("myclone"):
             c.run("export .")
-            assert "pkg/0.1: COMMIT: {}".format(commit) in c.out
-            assert "pkg/0.1: URL: {}".format(url) in c.out
+            assert f"pkg/0.1: COMMIT: {commit}" in c.out
+            assert f"pkg/0.1: URL: {url}" in c.out
             assert "pkg/0.1: COMMIT IN REMOTE: True" in c.out
             assert "pkg/0.1: DIRTY: False" in c.out
 
@@ -1004,13 +1004,13 @@ class TestGitShallowTagClone:
             c.run_command('git tag 1.0.0')
 
         # Do a shallow clone of our tag
-        c.run_command('git clone --depth=1 --branch 1.0.0 "{}" myclone'.format(folder))
+        c.run_command(f'git clone --depth=1 --branch 1.0.0 "{folder}" myclone')
         with c.chdir("myclone"):
             c.save({"conanfile.py": self.conanfile + "\n# some coment!"})
             new_commit = git_add_changes_commit(c.current_folder)
 
             c.run("export .")
-            assert "pkg/0.1: COMMIT: {}".format(new_commit) in c.out
-            assert "pkg/0.1: URL: {}".format(url) in c.out
+            assert f"pkg/0.1: COMMIT: {new_commit}" in c.out
+            assert f"pkg/0.1: URL: {url}" in c.out
             assert "pkg/0.1: COMMIT IN REMOTE: False" in c.out
             assert "pkg/0.1: DIRTY: False" in c.out

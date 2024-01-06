@@ -19,10 +19,11 @@ class ConfigDataTemplate(CMakeDepsFileTemplate):
 
     @property
     def filename(self):
-        data_fname = "" if not self.generating_module else "module-"
-        data_fname += "{}-{}".format(self.file_name, self.configuration.lower())
+        data_fname = (
+            "" if not self.generating_module else "module-"
+        ) + f"{self.file_name}-{self.configuration.lower()}"
         if self.arch:
-            data_fname += "-{}".format(self.arch)
+            data_fname += f"-{self.arch}"
         data_fname += "-data.cmake"
         return data_fname
 
@@ -82,8 +83,8 @@ class ConfigDataTemplate(CMakeDepsFileTemplate):
 
     @property
     def template(self):
-        # This will be at: XXX-release-data.cmake
-        ret = textwrap.dedent("""\
+        return textwrap.dedent(
+            """\
               ########### AGGREGATED COMPONENTS AND DEPENDENCIES FOR THE MULTI CONFIG #####################
               #############################################################################################
 
@@ -176,12 +177,12 @@ class ConfigDataTemplate(CMakeDepsFileTemplate):
                   "$<$<COMPILE_LANGUAGE:C>{{ ':${' }}{{ pkg_name }}_{{ comp_variable_name }}_COMPILE_OPTIONS_C{{ config_suffix }}}>")
 
               {%- endfor %}
-          """)
-        return ret
+          """
+        )
 
     def _get_global_cpp_cmake(self):
         global_cppinfo = self.conanfile.cpp_info.aggregated_components()
-        pfolder_var_name = "{}_PACKAGE_FOLDER{}".format(self.pkg_name, self.config_suffix)
+        pfolder_var_name = f"{self.pkg_name}_PACKAGE_FOLDER{self.config_suffix}"
         return _TargetDataContext(global_cppinfo, pfolder_var_name, self._root_folder,
                                   self.require, self.cmake_package_type, self.is_host_windows,
                                   self.conanfile, self.cmakedeps)
@@ -195,7 +196,7 @@ class ConfigDataTemplate(CMakeDepsFileTemplate):
         """Returns a list of (component_name, DepsCppCMake)"""
         ret = []
         sorted_comps = self.conanfile.cpp_info.get_sorted_components()
-        pfolder_var_name = "{}_PACKAGE_FOLDER{}".format(self.pkg_name, self.config_suffix)
+        pfolder_var_name = f"{self.pkg_name}_PACKAGE_FOLDER{self.config_suffix}"
         transitive_requires = get_transitive_requires(self.cmakedeps._conanfile, self.conanfile)
         for comp_name, comp in sorted_comps.items():
             deps_cpp_cmake = _TargetDataContext(comp, pfolder_var_name, self._root_folder,
@@ -231,12 +232,10 @@ class ConfigDataTemplate(CMakeDepsFileTemplate):
             return []
 
         transitive_reqs = get_transitive_requires(self.cmakedeps._conanfile, self.conanfile)
-        # Previously it was filtering here components, but not clear why the file dependency
-        # should be skipped if components are not being required, why would it declare a
-        # dependency to it?
-        ret = [self.cmakedeps.get_cmake_package_name(r, self.generating_module)
-               for r in transitive_reqs.values()]
-        return ret
+        return [
+            self.cmakedeps.get_cmake_package_name(r, self.generating_module)
+            for r in transitive_reqs.values()
+        ]
 
     def _get_dependencies_find_modes(self):
         ret = {}

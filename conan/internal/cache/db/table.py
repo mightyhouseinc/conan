@@ -67,5 +67,5 @@ class BaseDbTable:
         with self.db_connection() as conn:
             r = conn.execute(f'SELECT rowid, * FROM {self.table_name}')
             for it in r.fetchall():
-                print(str(it))
+                print(it)
             print(f"********* ENDTABLE {self.table_name}*************")

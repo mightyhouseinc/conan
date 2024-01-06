@@ -105,7 +105,7 @@ class ConfigInstallTest(unittest.TestCase):
         client = TestClient()
         client.save({"conanfile.py": GenConanfile()})
         client.run("create . --name=pkg --version=1.0")
-        client.run('config install "%s"' % folder)
+        client.run(f'config install "{folder}"')
         client.run("remote list")
         self.assertIn("myrepo1: https://myrepourl.net [Verify SSL: False, Enabled: True]",
                       client.out)
@@ -169,8 +169,8 @@ class ConfigInstallTest(unittest.TestCase):
         """
         zippath = self._create_zip()
         for filetype in ["", "--type=file"]:
-            self.client.run('config install "%s" %s' % (zippath, filetype))
-            self._check("file, %s, True, None" % zippath)
+            self.client.run(f'config install "{zippath}" {filetype}')
+            self._check(f"file, {zippath}, True, None")
             self.assertTrue(os.path.exists(zippath))
 
     def test_install_config_file(self):
@@ -188,15 +188,15 @@ class ConfigInstallTest(unittest.TestCase):
         dest_remote_file = os.path.join(tmp_dir, "remotes.json")
         shutil.move(src_setting_file, dest_setting_file)
         shutil.move(src_remote_file, dest_remote_file)
-        self.client.run('config install "%s"' % profile_folder)
+        self.client.run(f'config install "{profile_folder}"')
         shutil.move(dest_setting_file, src_setting_file)
         shutil.move(dest_remote_file, src_remote_file)
         shutil.rmtree(tmp_dir)
 
         for cmd_option in ["", "--type=file"]:
-            self.client.run('config install "%s" %s' % (src_setting_file, cmd_option))
-            self.client.run('config install "%s" %s' % (src_remote_file, cmd_option))
-            self._check("file, %s, True, None" % src_remote_file)
+            self.client.run(f'config install "{src_setting_file}" {cmd_option}')
+            self.client.run(f'config install "{src_remote_file}" {cmd_option}')
+            self._check(f"file, {src_remote_file}, True, None")
 
     def test_install_dir(self):
         """ should install from a dir in current dir
@@ -204,14 +204,14 @@ class ConfigInstallTest(unittest.TestCase):
         folder = self._create_profile_folder()
         self.assertTrue(os.path.isdir(folder))
         for dirtype in ["", "--type=dir"]:
-            self.client.run('config install "%s" %s' % (folder, dirtype))
-            self._check("dir, %s, True, None" % folder)
+            self.client.run(f'config install "{folder}" {dirtype}')
+            self._check(f"dir, {folder}, True, None")
 
     def test_install_source_target_folders(self):
         folder = temp_folder()
         save_files(folder, {"subf/file.txt": "hello",
                             "subf/subf/file2.txt": "bye"})
-        self.client.run('config install "%s" -sf=subf -tf=newsubf' % folder)
+        self.client.run(f'config install "{folder}" -sf=subf -tf=newsubf')
         content = load(os.path.join(self.client.cache_folder, "newsubf/file.txt"))
         self.assertEqual(content, "hello")
         content = load(os.path.join(self.client.cache_folder, "newsubf/subf/file2.txt"))
@@ -261,7 +261,7 @@ class ConfigInstallTest(unittest.TestCase):
     def test_without_profile_folder(self):
         shutil.rmtree(self.client.cache.profiles_path)
         zippath = self._create_zip()
-        self.client.run('config install "%s"' % zippath)
+        self.client.run(f'config install "{zippath}"')
         self.assertEqual(sorted(os.listdir(self.client.cache.profiles_path)),
                          sorted(["linux", "windows"]))
         self.assertEqual(load(os.path.join(self.client.cache.profiles_path, "linux")).splitlines(),
@@ -276,11 +276,11 @@ class ConfigInstallTest(unittest.TestCase):
                 self._create_zip(file_path)
 
             with patch.object(FileDownloader, 'download', new=my_download):
-                self.client.run("config install http://myfakeurl.com/myconf.zip %s" % origin)
+                self.client.run(f"config install http://myfakeurl.com/myconf.zip {origin}")
                 self._check("url, http://myfakeurl.com/myconf.zip, True, None")
 
                 # repeat the process to check
-                self.client.run("config install http://myfakeurl.com/myconf.zip %s" % origin)
+                self.client.run(f"config install http://myfakeurl.com/myconf.zip {origin}")
                 self._check("url, http://myfakeurl.com/myconf.zip, True, None")
 
     def test_install_url_query(self):
@@ -344,9 +344,9 @@ class ConfigInstallTest(unittest.TestCase):
             self.client.run_command('git config user.email myname@mycompany.com')
             self.client.run_command('git commit -m "mymsg"')
 
-        self.client.run('config install "%s/.git"' % folder)
+        self.client.run(f'config install "{folder}/.git"')
         check_path = os.path.join(folder, ".git")
-        self._check("git, %s, True, None" % check_path)
+        self._check(f"git, {check_path}, True, None")
 
     @pytest.mark.tool("git")
     def test_install_repo_relative(self):
@@ -361,8 +361,8 @@ class ConfigInstallTest(unittest.TestCase):
             self.client.run_command('git config user.email myname@mycompany.com')
             self.client.run_command('git commit -m "mymsg"')
 
-        self.client.run('config install "%s/.git"' % relative_folder)
-        self._check("git, %s, True, None" % os.path.join("%s" % folder, ".git"))
+        self.client.run(f'config install "{relative_folder}/.git"')
+        self._check(f'git, {os.path.join(f"{folder}", ".git")}, True, None')
 
     @pytest.mark.tool("git")
     def test_install_custom_args(self):
@@ -377,9 +377,11 @@ class ConfigInstallTest(unittest.TestCase):
             self.client.run_command('git config user.email myname@mycompany.com')
             self.client.run_command('git commit -m "mymsg"')
 
-        self.client.run('config install "%s/.git" --args="-c init.templateDir=value"' % folder)
+        self.client.run(
+            f'config install "{folder}/.git" --args="-c init.templateDir=value"'
+        )
         check_path = os.path.join(folder, ".git")
-        self._check("git, %s, True, -c init.templateDir=value" % check_path)
+        self._check(f"git, {check_path}, True, -c init.templateDir=value")
 
     def test_force_git_type(self):
         client = TestClient()
@@ -445,14 +447,14 @@ class ConfigInstallTest(unittest.TestCase):
             self._create_zip(file_path)
 
         with patch.object(FileDownloader, 'download', new=my_download):
-            self.client.run("config install %s" % fake_url_with_credentials)
+            self.client.run(f"config install {fake_url_with_credentials}")
 
             # Check credentials are not displayed in output
             self.assertNotIn(fake_url_with_credentials, self.client.out)
             self.assertIn(fake_url_hidden_password, self.client.out)
 
             # Check credentials still stored in configuration
-            self._check("url, %s, True, None" % fake_url_with_credentials)
+            self._check(f"url, {fake_url_with_credentials}, True, None")
 
     def test_ssl_verify(self):
         fake_url = "https://fakeurl.com/myconf.zip"
@@ -466,10 +468,10 @@ class ConfigInstallTest(unittest.TestCase):
             self._create_zip(file_path)
 
         with patch.object(FileDownloader, 'download', new=download_verify_false):
-            self.client.run("config install %s --verify-ssl=False" % fake_url)
+            self.client.run(f"config install {fake_url} --verify-ssl=False")
 
         with patch.object(FileDownloader, 'download', new=download_verify_true):
-            self.client.run("config install %s --verify-ssl=True" % fake_url)
+            self.client.run(f"config install {fake_url} --verify-ssl=True")
 
         with patch.object(FileDownloader, 'download', new=download_verify_true):
             self.client.run(f"config install {fake_url}")
@@ -491,9 +493,9 @@ class ConfigInstallTest(unittest.TestCase):
             self.client.run_command('git add .')
             self.client.run_command('git commit -m "my file"')
 
-        self.client.run('config install "%s/.git" --args "-b other_branch"' % folder)
+        self.client.run(f'config install "{folder}/.git" --args "-b other_branch"')
         check_path = os.path.join(folder, ".git")
-        self._check("git, %s, True, -b other_branch" % check_path)
+        self._check(f"git, {check_path}, True, -b other_branch")
         file_path = os.path.join(self.client.cache.hooks_path, "cust", "cust.py")
         assert load(file_path) == ""
 
@@ -503,9 +505,9 @@ class ConfigInstallTest(unittest.TestCase):
             self.client.run_command('git add .')
             self.client.run_command('git commit -m "my other file"')
             self.client.run_command('git checkout master')
-        self.client.run('config install "%s/.git" --args "-b other_branch"' % folder)
+        self.client.run(f'config install "{folder}/.git" --args "-b other_branch"')
         check_path = os.path.join(folder, ".git")
-        self._check("git, %s, True, -b other_branch" % check_path)
+        self._check(f"git, {check_path}, True, -b other_branch")
         assert load(file_path) == "new content"
 
     def test_config_install_requester(self):
@@ -521,13 +523,13 @@ class ConfigInstallTest(unittest.TestCase):
 
     def test_overwrite_read_only_file(self):
         source_folder = self._create_profile_folder()
-        self.client.run('config install "%s"' % source_folder)
+        self.client.run(f'config install "{source_folder}"')
         # make existing settings.yml read-only
         make_file_read_only(self.client.cache.settings_path)
         self.assertFalse(os.access(self.client.cache.settings_path, os.W_OK))
 
         # config install should overwrite the existing read-only file
-        self.client.run('config install "%s"' % source_folder)
+        self.client.run(f'config install "{source_folder}"')
         self.assertTrue(os.access(self.client.cache.settings_path, os.W_OK))
 
     def test_dont_copy_file_permissions(self):
@@ -535,7 +537,7 @@ class ConfigInstallTest(unittest.TestCase):
         # make source settings.yml read-only
         make_file_read_only(os.path.join(source_folder, 'remotes.json'))
 
-        self.client.run('config install "%s"' % source_folder)
+        self.client.run(f'config install "{source_folder}"')
         self.assertTrue(os.access(self.client.cache.settings_path, os.W_OK))
 
 
@@ -551,10 +553,10 @@ class ConfigInstallSchedTest(unittest.TestCase):
         """ Once executed by the scheduler, conan config install must executed again
             when invoked manually
         """
-        self.client.run('config install "%s"' % self.folder)
+        self.client.run(f'config install "{self.folder}"')
         self.assertIn("Copying file global.conf", self.client.out)
 
-        self.client.run('config install "%s"' % self.folder)
+        self.client.run(f'config install "{self.folder}"')
         self.assertIn("Copying file global.conf", self.client.out)
 
     @pytest.mark.tool("git")
@@ -567,7 +569,7 @@ class ConfigInstallSchedTest(unittest.TestCase):
             self.client.run_command('git config user.name myname')
             self.client.run_command('git config user.email myname@mycompany.com')
             self.client.run_command('git commit -m "mymsg"')
-        self.client.run('config install "%s/.git" --type git' % self.folder)
+        self.client.run(f'config install "{self.folder}/.git" --type git')
         self.assertIn("Copying file global.conf", self.client.out)
         self.assertIn("Repo cloned!", self.client.out)  # git clone executed by scheduled task
 
@@ -583,7 +585,7 @@ class ConfigInstallSchedTest(unittest.TestCase):
             client.run_command('git commit -m "mymsg"')
         assert ".gitlab-conan" in client.cache_folder
         assert os.path.basename(client.cache_folder) == DEFAULT_CONAN_HOME
-        client.run('config install "%s/.git" --type git' % self.folder)
+        client.run(f'config install "{self.folder}/.git" --type git')
         conf = load(client.cache.new_config_path)
         dirs = os.listdir(client.cache.cache_folder)
         assert ".git" not in dirs

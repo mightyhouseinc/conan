@@ -43,38 +43,52 @@ class InstallCascadeTest(unittest.TestCase):
 
     def _assert_built(self, refs):
         for ref in refs:
-            self.assertIn("{}: Copying sources to build folder".format(ref), self.client.out)
+            self.assertIn(f"{ref}: Copying sources to build folder", self.client.out)
         for ref in [self.ref_a, self.ref_b, self.ref_c, self.ref_d, self.ref_e, self.ref_f]:
             if ref not in refs:
-                self.assertNotIn("{}: Copying sources to build folder".format(ref),
-                                 self.client.out)
+                self.assertNotIn(f"{ref}: Copying sources to build folder", self.client.out)
 
     def test_install_cascade_only_affected(self):
         project = RecipeReference.loads("project/1.0@conan/stable")
         project_cf = GenConanfile().with_requirement(self.ref_e).with_requirement(self.ref_f)
 
         # Building A everything is built
-        self.client.create(project, conanfile=project_cf,
-                           args="--build {} --build cascade".format(self.ref_a))
+        self.client.create(
+            project,
+            conanfile=project_cf,
+            args=f"--build {self.ref_a} --build cascade",
+        )
         self._assert_built([self.ref_a, self.ref_b, self.ref_c, self.ref_d,
                             self.ref_e, self.ref_f, project])
 
         # Building D builds E, F and project
-        self.client.create(project, conanfile=project_cf,
-                           args="--build {} --build cascade".format(self.ref_d))
+        self.client.create(
+            project,
+            conanfile=project_cf,
+            args=f"--build {self.ref_d} --build cascade",
+        )
         self._assert_built([self.ref_d, self.ref_e, self.ref_f, project])
 
         # Building E only builds E and project
-        self.client.create(project, conanfile=project_cf,
-                           args="--build {} --build cascade".format(self.ref_e))
+        self.client.create(
+            project,
+            conanfile=project_cf,
+            args=f"--build {self.ref_e} --build cascade",
+        )
         self._assert_built([self.ref_e, project])
 
         # Building project only builds project
-        self.client.create(project, conanfile=project_cf,
-                           args="--build {} --build cascade".format(project))
+        self.client.create(
+            project,
+            conanfile=project_cf,
+            args=f"--build {project} --build cascade",
+        )
         self._assert_built([project])
 
         # Building C => builds F and project
-        self.client.create(project, conanfile=project_cf,
-                           args="--build {} --build cascade".format(self.ref_c))
+        self.client.create(
+            project,
+            conanfile=project_cf,
+            args=f"--build {self.ref_c} --build cascade",
+        )
         self._assert_built([project, self.ref_f, self.ref_c])

@@ -81,8 +81,7 @@ class CacheDatabase:
 
     def try_get_package(self, ref: PkgReference):
         """ Returns the reference data as a dictionary (or fails) """
-        ref_data = self._packages.get(ref)
-        return ref_data
+        return self._packages.get(ref)
 
     def create_recipe(self, path, ref: RecipeReference):
         self._recipes.create(path, ref)

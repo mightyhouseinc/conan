@@ -81,12 +81,12 @@ class CustomConfigurationTest(unittest.TestCase):
                     "build_type": "Release",
                     }
 
-        settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings.items() if v)
+        settings = " ".join(f'-s {k}="{v}"' for k, v in settings.items() if v)
 
         # Run the configure corresponding to this test case
         with self.client.chdir('build'):
-            self.client.run("install .. %s -o hello/*:shared=True -of=." % settings)
-            self.client.run("install .. %s -o hello/*:shared=False -of=." % settings)
+            self.client.run(f"install .. {settings} -o hello/*:shared=True -of=.")
+            self.client.run(f"install .. {settings} -o hello/*:shared=False -of=.")
             self.assertTrue(os.path.isfile(os.path.join(self.client.current_folder,
                                                         "hello-Target-releaseshared.cmake")))
             self.assertTrue(os.path.isfile(os.path.join(self.client.current_folder,
@@ -179,13 +179,13 @@ class CustomSettingsTest(unittest.TestCase):
                     "build_type": "MyRelease",
                     }
 
-        settings_h = " ".join('-s %s="%s"' % (k, v) for k, v in settings.items())
-        settings_b = " ".join('-s:b %s="%s"' % (k, v) for k, v in settings.items())
+        settings_h = " ".join(f'-s {k}="{v}"' for k, v in settings.items())
+        settings_b = " ".join(f'-s:b {k}="{v}"' for k, v in settings.items())
 
         # Run the configure corresponding to this test case
         build_directory = os.path.join(self.client.current_folder, "build").replace("\\", "/")
         with self.client.chdir(build_directory):
-            self.client.run("install .. %s %s -of=." % (settings_h, settings_b))
+            self.client.run(f"install .. {settings_h} {settings_b} -of=.")
             self.assertTrue(os.path.isfile(os.path.join(self.client.current_folder,
                                                         "hello-Target-myrelease.cmake")))
 

@@ -36,7 +36,7 @@ def transform_conanfile(node):
     }
 
     for f, t in dynamic_fields.items():
-        node.locals[f] = [i for i in t]
+        node.locals[f] = list(t)
 
 
 MANAGER.register_transform(

@@ -30,7 +30,7 @@ def test_toolchain_nmake(compiler, version, runtime, cppstd, build_type,
                 "build_type": build_type,
                 "arch": "x86_64"}
 
-    serialize_array = lambda arr: "[{}]".format(",".join([f"'{v}'" for v in arr]))
+    serialize_array = lambda arr: f"""[{",".join([f"'{v}'" for v in arr])}]"""
     conf = {
         "tools.build:defines": serialize_array(defines) if defines else "",
         "tools.build:cflags": serialize_array(cflags) if cflags else "",
@@ -40,7 +40,7 @@ def test_toolchain_nmake(compiler, version, runtime, cppstd, build_type,
     }
 
     # Build the profile according to the settings provided
-    settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings.items() if v)
+    settings = " ".join(f'-s {k}="{v}"' for k, v in settings.items() if v)
 
     client.run("new cmake_lib -d name=dep -d version=1.0")
     conf = " ".join(f'-c {k}="{v}"' for k, v in conf.items() if v)

@@ -31,9 +31,9 @@ class LocalDB(object):
         with self._connect() as connection:
             try:
                 cursor = connection.cursor()
-                query = "DELETE FROM %s" % REMOTES_USER_TABLE
+                query = f"DELETE FROM {REMOTES_USER_TABLE}"
                 if remote_url:
-                    query += ' WHERE remote_url="{}"'.format(remote_url)
+                    query += f' WHERE remote_url="{remote_url}"'
                 cursor.execute(query)
                 try:
                     # https://github.com/ghaering/pysqlite/issues/109
@@ -81,8 +81,9 @@ class LocalDB(object):
         with self._connect() as connection:
             try:
                 statement = connection.cursor()
-                statement.execute('select user, token, refresh_token from %s where remote_url="%s"'
-                                  % (REMOTES_USER_TABLE, remote_url))
+                statement.execute(
+                    f'select user, token, refresh_token from {REMOTES_USER_TABLE} where remote_url="{remote_url}"'
+                )
                 rs = statement.fetchone()
                 if not rs:
                     return None, None, None
@@ -109,4 +110,4 @@ class LocalDB(object):
                                   (remote_url, user, token, refresh_token))
                 connection.commit()
             except Exception as e:
-                raise ConanException("Could not store credentials %s" % str(e))
+                raise ConanException(f"Could not store credentials {str(e)}")

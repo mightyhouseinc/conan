@@ -33,7 +33,7 @@ class RestV2Methods(RestCommonMethods):
         data = self.get_json(url)
         # Discarding (.keys()) still empty metadata for files
         # and make sure the paths like metadata/sign/signature are normalized to /
-        data["files"] = list(d.replace("\\", "/") for d in data["files"].keys())
+        data["files"] = [d.replace("\\", "/") for d in data["files"].keys()]
         return data
 
     def get_recipe(self, ref, dest_folder, metadata, only_metadata):
@@ -71,8 +71,7 @@ class RestV2Methods(RestCommonMethods):
         # If we didn't indicated reference, server got the latest, use absolute now, it's safer
         urls = {fn: self.router.recipe_file(ref, fn) for fn in files}
         self._download_and_save_files(urls, dest_folder, files, scope=str(ref))
-        ret = {fn: os.path.join(dest_folder, fn) for fn in files}
-        return ret
+        return {fn: os.path.join(dest_folder, fn) for fn in files}
 
     def get_package(self, pref, dest_folder, metadata, only_metadata):
         url = self.router.package_snapshot(pref)
@@ -151,8 +150,9 @@ class RestV2Methods(RestCommonMethods):
                 failed.append(filename)
 
         if failed:
-            raise ConanException("Execute upload again to retry upload the failed files: %s"
-                                 % ", ".join(failed))
+            raise ConanException(
+                f'Execute upload again to retry upload the failed files: {", ".join(failed)}'
+            )
 
     def _download_and_save_files(self, urls, dest_folder, files, parallel=False, scope=None,
                                  metadata=False):

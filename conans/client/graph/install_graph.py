@@ -163,7 +163,7 @@ class _InstallRecipeReference:
             closed = []
             for o in opened.values():
                 requires = o.depends
-                if not any(n in opened for n in requires):
+                if all(n not in opened for n in requires):
                     current_level.append(o)
                     closed.append(o)
 
@@ -210,8 +210,7 @@ class InstallGraph:
         data = json.loads(load(filename))
         filename = os.path.basename(filename)
         filename = os.path.splitext(filename)[0]
-        install_graph = InstallGraph.deserialize(data, filename)
-        return install_graph
+        return InstallGraph.deserialize(data, filename)
 
     def merge(self, other):
         """
@@ -253,7 +252,7 @@ class InstallGraph:
             closed = []
             for o in opened.values():
                 requires = o.depends
-                if not any(n in opened for n in requires):
+                if all(n not in opened for n in requires):
                     current_level.append(o)
                     closed.append(o)
 
@@ -261,9 +260,7 @@ class InstallGraph:
                 levels.append(current_level)
             # now initialize new level
             opened = {k: v for k, v in opened.items() if v not in closed}
-        if flat:
-            return [r for level in levels for r in level]
-        return levels
+        return [r for level in levels for r in level] if flat else levels
 
     def install_build_order(self):
         # TODO: Rename to serialize()?
@@ -271,8 +268,7 @@ class InstallGraph:
         This is basically a serialization of the build-order
         """
         install_order = self.install_order()
-        result = [[n.serialize() for n in level] for level in install_order]
-        return result
+        return [[n.serialize() for n in level] for level in install_order]
 
     def raise_errors(self):
         missing, invalid = [], []
@@ -291,7 +287,7 @@ class InstallGraph:
                     binary, reason = "Cannot build for this configuration", node.cant_build
                 else:
                     binary, reason = "Invalid", node.conanfile.info.invalid
-                msg.append("{}: {}: {}".format(node.conanfile, binary, reason))
+                msg.append(f"{node.conanfile}: {binary}: {reason}")
             raise ConanInvalidConfiguration("\n".join(msg))
         if missing:
             self._raise_missing(missing)
@@ -299,7 +295,7 @@ class InstallGraph:
     def _raise_missing(self, missing):
         # TODO: Remove out argument
         # TODO: A bit dirty access to .pref
-        missing_prefs = set(n.nodes[0].pref for n in missing)  # avoid duplicated
+        missing_prefs = {n.nodes[0].pref for n in missing}
         missing_prefs_str = list(sorted([str(pref) for pref in missing_prefs]))
         out = ConanOutput()
         for pref_str in missing_prefs_str:
@@ -313,19 +309,24 @@ class InstallGraph:
         ref, conanfile = node.ref, node.conanfile
 
         msg = f"Can't find a '{ref}' package binary '{package_id}' for the configuration:\n"\
-              f"{conanfile.info.dumps()}"
+                  f"{conanfile.info.dumps()}"
         conanfile.output.warning(msg)
         missing_pkgs = "', '".join(list(sorted([str(pref.ref) for pref in missing_prefs])))
         if self._is_test_package:
             build_msg = "This is a **test_package** missing binary. You can use --build (for " \
-                        "all dependencies) or --build-test (exclusive for 'test_package' " \
-                        "dependencies) to define what can be built from sources"
+                            "all dependencies) or --build-test (exclusive for 'test_package' " \
+                            "dependencies) to define what can be built from sources"
         else:
             if len(missing_prefs) >= 5:
                 build_str = "--build=missing"
             else:
-                build_str = " ".join(list(sorted(["--build=%s" % str(pref.ref)
-                                                  for pref in missing_prefs])))
+                build_str = " ".join(
+                    list(
+                        sorted(
+                            [f"--build={str(pref.ref)}" for pref in missing_prefs]
+                        )
+                    )
+                )
             build_msg = f"Try to build locally from sources using the '{build_str}' argument"
 
         raise ConanException(textwrap.dedent(f'''\

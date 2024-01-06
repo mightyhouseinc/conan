@@ -34,7 +34,7 @@ class CMakeDepsFileTemplate(object):
         try:
             context = self.context
         except Exception as e:
-            raise ConanException("error generating context for '{}': {}".format(self.conanfile, e))
+            raise ConanException(f"error generating context for '{self.conanfile}': {e}")
 
         # Cache the template instance as a class attribute to greatly speed up the rendering
         # NOTE: this assumes that self.template always returns the same string
@@ -66,7 +66,7 @@ class CMakeDepsFileTemplate(object):
 
     @property
     def config_suffix(self):
-        return "_{}".format(self.configuration.upper()) if self.configuration else ""
+        return f"_{self.configuration.upper()}" if self.configuration else ""
 
     @staticmethod
     def _get_target_default_name(req, component_name="", suffix=""):

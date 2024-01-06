@@ -60,15 +60,17 @@ def add_common_install_arguments(parser):
 def add_profiles_args(parser):
     contexts = ["build", "host"]
 
-    # This comes from the _AppendAction code but modified to add to the contexts
+
+
     class ContextAllAction(argparse.Action):
 
         def __call__(self, action_parser, namespace, values, option_string=None):
             for context in contexts:
-                items = getattr(namespace, self.dest + "_" + context, None)
+                items = getattr(namespace, f"{self.dest}_{context}", None)
                 items = items[:] if items else []
                 items.append(values)
-                setattr(namespace, self.dest + "_" + context, items)
+                setattr(namespace, f"{self.dest}_{context}", items)
+
 
     def create_config(short, long, example=None):
         parser.add_argument(f"-{short}", f"--{long}",

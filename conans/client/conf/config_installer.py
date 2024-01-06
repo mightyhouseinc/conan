@@ -26,10 +26,10 @@ class ConanIgnoreMatcher:
                     self._ignored_entries.add(line_content)
 
     def matches(self, path):
-        for ignore_entry in self._ignored_entries:
-            if fnmatch.fnmatch(path, ignore_entry):
-                return True
-        return False
+        return any(
+            fnmatch.fnmatch(path, ignore_entry)
+            for ignore_entry in self._ignored_entries
+        )
 
 
 def _hide_password(resource):
@@ -58,13 +58,13 @@ def tmp_config_install_folder(cache):
 
 def _process_git_repo(config, cache):
     output = ConanOutput()
-    output.info("Trying to clone repo: %s" % config.uri)
+    output.info(f"Trying to clone repo: {config.uri}")
     with tmp_config_install_folder(cache) as tmp_folder:
         with chdir(tmp_folder):
             args = config.args or ""
-            ret, out = detect_runner('git clone "{}" . {}'.format(config.uri, args))
+            ret, out = detect_runner(f'git clone "{config.uri}" . {args}')
             if ret != 0:
-                raise ConanException("Can't clone repo: {}".format(out))
+                raise ConanException(f"Can't clone repo: {out}")
             output.info("Repo cloned!")
         _process_folder(config, tmp_folder, cache)
 
@@ -111,13 +111,13 @@ def _process_file(directory, filename, config, cache, folder):
                 remove(target_folder)
 
         mkdir(target_folder)
-        output.info("Copying file %s to %s" % (filename, target_folder))
+        output.info(f"Copying file {filename} to {target_folder}")
         _filecopy(directory, filename, target_folder)
 
 
 def _process_folder(config, folder, cache):
     if not os.path.isdir(folder):
-        raise ConanException("No such directory: '%s'" % str(folder))
+        raise ConanException(f"No such directory: '{str(folder)}'")
     if config.source_folder:
         folder = os.path.join(folder, config.source_folder)
     conanignore_path = os.path.join(folder, '.conanignore')
@@ -136,7 +136,7 @@ def _process_folder(config, folder, cache):
 def _process_download(config, cache, requester):
     output = ConanOutput()
     with tmp_config_install_folder(cache) as tmp_folder:
-        output.info("Trying to download  %s" % _hide_password(config.uri))
+        output.info(f"Trying to download  {_hide_password(config.uri)}")
         path = urlsplit(config.uri).path
         filename = os.path.basename(path)
         zippath = os.path.join(tmp_folder, filename)
@@ -176,17 +176,16 @@ class _ConfigOrigin(object):
         config = _ConfigOrigin({})
         if config_type:
             config.type = config_type
+        elif uri.endswith(".git"):
+            config.type = "git"
+        elif os.path.isdir(uri):
+            config.type = "dir"
+        elif os.path.isfile(uri):
+            config.type = "file"
+        elif uri.startswith("http"):
+            config.type = "url"
         else:
-            if uri.endswith(".git"):
-                config.type = "git"
-            elif os.path.isdir(uri):
-                config.type = "dir"
-            elif os.path.isfile(uri):
-                config.type = "file"
-            elif uri.startswith("http"):
-                config.type = "url"
-            else:
-                raise ConanException("Unable to deduce type config install: %s" % uri)
+            raise ConanException(f"Unable to deduce type config install: {uri}")
         config.source_folder = source_folder
         config.target_folder = target_folder
         config.args = args
@@ -202,12 +201,18 @@ def _is_compressed_file(filename):
     import zipfile
     if zipfile.is_zipfile(filename):
         return True
-    if (filename.endswith(".tar.gz") or filename.endswith(".tgz") or
-            filename.endswith(".tbz2") or filename.endswith(".tar.bz2") or
-            filename.endswith(".tar") or filename.endswith(".gz") or
-            filename.endswith(".tar.xz") or filename.endswith(".txz")):
-        return True
-    return False
+    return bool(
+        (
+            filename.endswith(".tar.gz")
+            or filename.endswith(".tgz")
+            or filename.endswith(".tbz2")
+            or filename.endswith(".tar.bz2")
+            or filename.endswith(".tar")
+            or filename.endswith(".gz")
+            or filename.endswith(".tar.xz")
+            or filename.endswith(".txz")
+        )
+    )
 
 
 def _process_config(config, cache, requester):
@@ -226,9 +231,9 @@ def _process_config(config, cache, requester):
         elif config.type == "url":
             _process_download(config, cache, requester=requester)
         else:
-            raise ConanException("Unable to process config install: %s" % config.uri)
+            raise ConanException(f"Unable to process config install: {config.uri}")
     except Exception as e:
-        raise ConanException("Failed conan config install: %s" % str(e))
+        raise ConanException(f"Failed conan config install: {str(e)}")
 
 
 def configuration_install(app, uri, verify_ssl, config_type=None,

@@ -34,7 +34,7 @@ def check_min_vs(conanfile, version, raise_invalid=True):
         compiler_version = conanfile.settings.get_safe("compiler.version")
         compiler_update = conanfile.settings.get_safe("compiler.update")
         if compiler_version and compiler_update is not None:
-            compiler_version += ".{}".format(compiler_update)
+            compiler_version += f".{compiler_update}"
 
     if compiler_version and Version(compiler_version) < version:
         if raise_invalid:
@@ -164,14 +164,17 @@ def vs_ide_version(conanfile):
     compiler = conanfile.settings.get_safe("compiler")
     compiler_version = conanfile.settings.get_safe("compiler.version")
     if compiler == "msvc":
-        toolset_override = conanfile.conf.get("tools.microsoft.msbuild:vs_version", check_type=str)
-        if toolset_override:
-            visual_version = toolset_override
-        else:
-            visual_version = msvc_version_to_vs_ide_version(compiler_version)
+        return (
+            toolset_override
+            if (
+                toolset_override := conanfile.conf.get(
+                    "tools.microsoft.msbuild:vs_version", check_type=str
+                )
+            )
+            else msvc_version_to_vs_ide_version(compiler_version)
+        )
     else:
-        visual_version = compiler_version
-    return visual_version
+        return compiler_version
 
 
 def msvc_runtime_flag(conanfile):
@@ -192,7 +195,7 @@ def msvc_runtime_flag(conanfile):
             raise ConanException("compiler.runtime should be 'static' or 'dynamic'")
         runtime_type = settings.get_safe("compiler.runtime_type")
         if runtime_type == "Debug":
-            runtime = "{}d".format(runtime)
+            runtime = f"{runtime}d"
         return runtime
     return ""
 
@@ -218,7 +221,7 @@ def vcvars_command(version, architecture=None, platform_type=None, winsdk_versio
         cmd.append('set "VSCMD_START_DIR=%CD%" &&')
 
     # The "call" is useful in case it is called from another .bat script
-    cmd.append('call "%s" ' % _vcvars_path(version, vs_install_path))
+    cmd.append(f'call "{_vcvars_path(version, vs_install_path)}" ')
     if architecture:
         cmd.append(architecture)
     if platform_type:
@@ -226,7 +229,7 @@ def vcvars_command(version, architecture=None, platform_type=None, winsdk_versio
     if winsdk_version:
         cmd.append(winsdk_version)
     if vcvars_ver:
-        cmd.append("-vcvars_ver=%s" % vcvars_ver)
+        cmd.append(f"-vcvars_ver={vcvars_ver}")
     return " ".join(cmd)
 
 
@@ -238,11 +241,11 @@ def _vcvars_path(version, vs_install_path):
                              "If using a non-default toolset from a VS IDE version consider "
                              "specifying it with the 'tools.microsoft.msbuild:vs_version' conf")
 
-    if int(version) > 14:
-        vcpath = os.path.join(vs_path, "VC/Auxiliary/Build/vcvarsall.bat")
-    else:
-        vcpath = os.path.join(vs_path, "VC/vcvarsall.bat")
-    return vcpath
+    return (
+        os.path.join(vs_path, "VC/Auxiliary/Build/vcvarsall.bat")
+        if int(version) > 14
+        else os.path.join(vs_path, "VC/vcvarsall.bat")
+    )
 
 
 def _vcvars_arch(conanfile):
@@ -257,24 +260,26 @@ def _vcvars_arch(conanfile):
     arch_build = str(settings_build.arch)
 
     arch = None
-    if arch_build == 'x86_64':
-        arch = {'x86': "amd64_x86",
-                'x86_64': 'amd64',
-                'armv7': 'amd64_arm',
-                'armv8': 'amd64_arm64'}.get(arch_host)
-    elif arch_build == 'x86':
-        arch = {'x86': 'x86',
-                'x86_64': 'x86_amd64',
-                'armv7': 'x86_arm',
-                'armv8': 'x86_arm64'}.get(arch_host)
-    elif arch_build == 'armv8':
+    if arch_build == 'armv8':
         arch = {'x86': 'arm64_x86',
                 'x86_64': 'arm64_x64',
                 'armv7': 'arm64_arm',
                 'armv8': 'arm64'}.get(arch_host)
 
+    elif arch_build == 'x86':
+        arch = {'x86': 'x86',
+                'x86_64': 'x86_amd64',
+                'armv7': 'x86_arm',
+                'armv8': 'x86_arm64'}.get(arch_host)
+    elif arch_build == 'x86_64':
+        arch = {'x86': "amd64_x86",
+                'x86_64': 'amd64',
+                'armv7': 'amd64_arm',
+                'armv8': 'amd64_arm64'}.get(arch_host)
     if not arch:
-        raise ConanException('vcvars unsupported architectures %s-%s' % (arch_build, arch_host))
+        raise ConanException(
+            f'vcvars unsupported architectures {arch_build}-{arch_host}'
+        )
 
     return arch
 
@@ -286,9 +291,7 @@ def _vcvars_vers(conanfile, compiler, vs_version):
     assert compiler == "msvc"
     # Code similar to CMakeToolchain toolset one
     compiler_version = str(conanfile.settings.compiler.version)
-    # The equivalent of compiler 192 is toolset 14.2
-    vcvars_ver = "14.{}".format(compiler_version[-1])
-    return vcvars_ver
+    return f"14.{compiler_version[-1]}"
 
 
 def is_msvc(conanfile, build_context=False):
@@ -299,10 +302,7 @@ def is_msvc(conanfile, build_context=False):
     :param build_context: If True, will use the settings from the build context, not host ones
     :return: ``bool`` True, if the host compiler is ``msvc``, otherwise, False.
     """
-    if not build_context:
-        settings = conanfile.settings
-    else:
-        settings = conanfile.settings_build
+    settings = conanfile.settings_build if build_context else conanfile.settings
     return settings.get_safe("compiler") == "msvc"
 
 
@@ -331,8 +331,7 @@ def msvs_toolset(conanfile):
     compiler = settings.get_safe("compiler")
     compiler_version = settings.get_safe("compiler.version")
     if compiler == "msvc":
-        subs_toolset = settings.get_safe("compiler.toolset")
-        if subs_toolset:
+        if subs_toolset := settings.get_safe("compiler.toolset"):
             return subs_toolset
         return msvc_version_to_toolset_version(compiler_version)
     if compiler == "intel-cc":

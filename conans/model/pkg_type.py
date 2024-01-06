@@ -39,10 +39,7 @@ class PackageType(Enum):
             except ConanException:
                 pass
             else:
-                if shared:
-                    return PackageType.SHARED
-                else:
-                    return PackageType.STATIC
+                return PackageType.SHARED if shared else PackageType.STATIC
             return PackageType.UNKNOWN
 
         conanfile_type = conanfile.package_type

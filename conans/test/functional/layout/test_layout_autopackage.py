@@ -389,5 +389,7 @@ def test_auto_package_only_one_destination():
                  "resdirs"]:
         client.save({"conanfile.py": conan_file.format(dirs)})
         client.run("create . --name=lib --version=1.0", assert_error=True)
-        assert "The package has more than 1 cpp_info.{}, " \
-               "cannot package automatically".format(dirs) in client.out
+        assert (
+            f"The package has more than 1 cpp_info.{dirs}, cannot package automatically"
+            in client.out
+        )

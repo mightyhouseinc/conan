@@ -75,10 +75,9 @@ class SourcesCachingDownloader:
                                                      verify_ssl, auth, headers, md5, sha1, sha256,
                                                      is_last):
                                 break
-                        else:
-                            if self._backup_download(backup_url, backups_urls, sha256, cached_path,
+                        elif self._backup_download(backup_url, backups_urls, sha256, cached_path,
                                                      urls, is_last):
-                                break
+                            break
 
             download_cache.update_backup_sources_json(cached_path, self._conanfile, urls)
             # Everything good, file in the cache, just copy it to final destination
@@ -95,10 +94,9 @@ class SourcesCachingDownloader:
         except ConanException as e:
             if is_last:
                 raise
-            else:
-                # TODO: Improve printing of AuthenticationException
-                self._output.warning(f"Sources for {urls} failed in 'origin': {e}")
-                self._output.warning("Checking backups")
+            # TODO: Improve printing of AuthenticationException
+            self._output.warning(f"Sources for {urls} failed in 'origin': {e}")
+            self._output.warning("Checking backups")
         else:
             if not is_last:
                 self._output.info(f"Sources for {urls} found in origin")
@@ -110,9 +108,11 @@ class SourcesCachingDownloader:
         don't want silently skipping a backup because it is down.
         """
         try:
-            backup_url = backup_url if backup_url.endswith("/") else backup_url + "/"
+            backup_url = backup_url if backup_url.endswith("/") else f"{backup_url}/"
             self._file_downloader.download(backup_url + sha256, cached_path, sha256=sha256)
-            self._file_downloader.download(backup_url + sha256 + ".json", cached_path + ".json")
+            self._file_downloader.download(
+                backup_url + sha256 + ".json", f"{cached_path}.json"
+            )
             self._output.info(f"Sources for {urls} found in remote backup {backup_url}")
             return True
         except NotFoundException:

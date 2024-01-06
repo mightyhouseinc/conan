@@ -66,5 +66,5 @@ def test_use_cmake_toolchain(client):
 
     # Build locally
     client.run('install . --name=library --version=version --profile:host=profile_host --profile:build=default')
-    client.run_command('cmake . -DCMAKE_TOOLCHAIN_FILE={}'.format(CMakeToolchain.filename))
+    client.run_command(f'cmake . -DCMAKE_TOOLCHAIN_FILE={CMakeToolchain.filename}')
     client.run_command('cmake --build .')

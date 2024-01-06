@@ -34,7 +34,7 @@ class ExportAPI:
 
         package_id = pkg_node.package_id
         assert package_id is not None
-        out.info("Packaging to %s" % package_id)
+        out.info(f"Packaging to {package_id}")
         pref = PkgReference(ref, package_id)
         pkg_layout = cache.create_build_pkg_layout(pref)
 

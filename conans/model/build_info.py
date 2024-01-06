@@ -487,7 +487,7 @@ class CppInfo:
             for dep_name, dep in self.components.items():
                 for require in dep.required_component_names:
                     if require == comp_name:
-                        deps_set.add("   {} requires {}".format(dep_name, comp_name))
+                        deps_set.add(f"   {dep_name} requires {comp_name}")
         dep_mesg = "\n".join(deps_set)
         raise ConanException(f"There is a dependency loop in "
                              f"'self.cpp_info.components' requires:\n{dep_mesg}")
@@ -545,15 +545,14 @@ class CppInfo:
         if not self.has_components and not self._package.requires:
             return
         # Accumulate all external requires
-        external = set(r.split("::")[0] for r in self._package.requires if "::" in r)
-        internal = set(r for r in self._package.requires if "::" not in r)
+        external = {r.split("::")[0] for r in self._package.requires if "::" in r}
+        internal = {r for r in self._package.requires if "::" not in r}
         # TODO: Cache this, this is computed in different places
         for key, comp in self.components.items():
             external.update(r.split("::")[0] for r in comp.requires if "::" in r)
             internal.update(r for r in comp.requires if "::" not in r)
 
-        missing_internal = list(internal.difference(self.components))
-        if missing_internal:
+        if missing_internal := list(internal.difference(self.components)):
             raise ConanException(f"{conanfile}: Internal components not found: {missing_internal}")
         if not external:
             return
@@ -577,11 +576,9 @@ class CppInfo:
         If the require is internal (to another component), the require will be None"""
         # FIXME: Cache the value
         # First aggregate without repetition, respecting the order
-        ret = [r for r in self._package.requires]
+        ret = list(self._package.requires)
         for comp in self.components.values():
             for r in comp.requires:
                 if r not in ret:
                     ret.append(r)
-        # Then split the names
-        ret = [r.split("::") if "::" in r else (None, r) for r in ret]
-        return ret
+        return [r.split("::") if "::" in r else (None, r) for r in ret]

@@ -72,10 +72,10 @@ class AutoPackager(object):
         """
 
         patterns_var = getattr(self.patterns, origin_name)
-        base_folder = getattr(self._conanfile, "{}_folder".format(origin_name))
+        base_folder = getattr(self._conanfile, f"{origin_name}_folder")
 
         for var in ["include", "lib", "bin", "framework", "src", "build", "res"]:
-            dirs_var_name = "{}dirs".format(var)
+            dirs_var_name = f"{var}dirs"
             origin_paths = getattr(origin_cppinfo, dirs_var_name)
             if not origin_paths:
                 continue

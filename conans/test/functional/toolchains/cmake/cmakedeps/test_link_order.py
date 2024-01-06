@@ -212,8 +212,8 @@ def _validate_link_order(libs):
     assert mandatory_1 == libs[:len(mandatory_1)]
 
     # Then, libz ones must be before system libraries that are consuming
-    assert libs.index(prefix + 'libz' + ext) < libs.index('system_lib' + ext_system)
-    assert libs.index(prefix + 'Z2' + ext) < libs.index('system_lib' + ext_system)
+    assert libs.index(f'{prefix}libz{ext}') < libs.index(f'system_lib{ext_system}')
+    assert libs.index(f'{prefix}Z2{ext}') < libs.index(f'system_lib{ext_system}')
 
     if platform.system() == "Darwin":
        assert libs.index('liblibz.a') < libs.index('Carbon')
@@ -318,17 +318,17 @@ def _run_and_get_lib_order(t, generator):
         # This is building the release and fails because invented system libraries are missing
         t.run_command("cmake --build . --config Release", assert_error=True)
         # Get the actual link order from the CMake call
-        libs = _get_link_order_from_xcode(t.load(os.path.join('executable.xcodeproj',
-                                                              'project.pbxproj')))
+        return _get_link_order_from_xcode(
+            t.load(os.path.join('executable.xcodeproj', 'project.pbxproj'))
+        )
     else:
         t.run_command("cmake . -DCMAKE_VERBOSE_MAKEFILE:BOOL=True"
                       " -DCMAKE_BUILD_TYPE=Release"
                       " -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake")
         extra_build = "--config Release" if platform.system() == "Windows" else ""  # Windows VS
-        t.run_command("cmake --build . {}".format(extra_build), assert_error=True)
+        t.run_command(f"cmake --build . {extra_build}", assert_error=True)
         # Get the actual link order from the CMake call
-        libs = _get_link_order_from_cmake(str(t.out))
-    return libs
+        return _get_link_order_from_cmake(str(t.out))
 
 
 @pytest.mark.parametrize("generator", [None, "Xcode"])

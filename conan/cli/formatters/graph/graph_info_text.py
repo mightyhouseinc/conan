@@ -42,6 +42,6 @@ def _serial_pretty_printer(data, indent=""):
         if isinstance(v, dict):
             cli_out_write(f"{indent}{k}:")
             # TODO: increment color too
-            _serial_pretty_printer(v, indent=indent+"  ")
+            _serial_pretty_printer(v, indent=f"{indent}  ")
         else:
             cli_out_write(f"{indent}{k}: {v}")

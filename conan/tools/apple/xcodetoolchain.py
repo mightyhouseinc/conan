@@ -58,35 +58,42 @@ class XcodeToolchain(object):
     def _cppstd(self):
         from conan.tools.build.flags import cppstd_flag
         cppstd = cppstd_flag(self._conanfile.settings)
-        if cppstd.startswith("-std="):
-            return cppstd[5:]
-        return cppstd
+        return cppstd[5:] if cppstd.startswith("-std=") else cppstd
 
     @property
     def _macosx_deployment_target(self):
-        return 'MACOSX_DEPLOYMENT_TARGET{}={}'.format(_xcconfig_conditional(self._conanfile.settings, self.configuration),
-                                                      self.os_version) if self.os_version else ""
+        return (
+            f'MACOSX_DEPLOYMENT_TARGET{_xcconfig_conditional(self._conanfile.settings, self.configuration)}={self.os_version}'
+            if self.os_version
+            else ""
+        )
 
     @property
     def _clang_cxx_library(self):
-        return 'CLANG_CXX_LIBRARY{}={}'.format(_xcconfig_conditional(self._conanfile.settings, self.configuration),
-                                               self.libcxx) if self.libcxx else ""
+        return (
+            f'CLANG_CXX_LIBRARY{_xcconfig_conditional(self._conanfile.settings, self.configuration)}={self.libcxx}'
+            if self.libcxx
+            else ""
+        )
 
     @property
     def _clang_cxx_language_standard(self):
-        return 'CLANG_CXX_LANGUAGE_STANDARD{}={}'.format(_xcconfig_conditional(self._conanfile.settings, self.configuration),
-                                                         self._cppstd) if self._cppstd else ""
+        return (
+            f'CLANG_CXX_LANGUAGE_STANDARD{_xcconfig_conditional(self._conanfile.settings, self.configuration)}={self._cppstd}'
+            if self._cppstd
+            else ""
+        )
     @property
     def _vars_xconfig_filename(self):
-        return "conantoolchain{}{}".format(_xcconfig_settings_filename(self._conanfile.settings, self.configuration),
-                                                                       self.extension)
+        return f"conantoolchain{_xcconfig_settings_filename(self._conanfile.settings, self.configuration)}{self.extension}"
 
     @property
     def _vars_xconfig_content(self):
-        ret = self._vars_xconfig.format(macosx_deployment_target=self._macosx_deployment_target,
-                                        clang_cxx_library=self._clang_cxx_library,
-                                        clang_cxx_language_standard=self._clang_cxx_language_standard)
-        return ret
+        return self._vars_xconfig.format(
+            macosx_deployment_target=self._macosx_deployment_target,
+            clang_cxx_library=self._clang_cxx_library,
+            clang_cxx_language_standard=self._clang_cxx_language_standard,
+        )
 
     @property
     def _agreggated_xconfig_content(self):
@@ -99,9 +106,9 @@ class XcodeToolchain(object):
         files_to_include = [self._agreggated_xconfig_filename]
         if self._check_if_extra_flags:
             files_to_include.append(self._flags_xcconfig_filename)
-        content = _add_includes_to_file_or_create(GLOBAL_XCCONFIG_FILENAME, GLOBAL_XCCONFIG_TEMPLATE,
-                                                  files_to_include)
-        return content
+        return _add_includes_to_file_or_create(
+            GLOBAL_XCCONFIG_FILENAME, GLOBAL_XCCONFIG_TEMPLATE, files_to_include
+        )
 
     @property
     def _agreggated_xconfig_filename(self):
@@ -113,13 +120,30 @@ class XcodeToolchain(object):
 
     @property
     def _flags_xcconfig_content(self):
-        defines = "GCC_PREPROCESSOR_DEFINITIONS = $(inherited) {}".format(" ".join(self._global_defines)) if self._global_defines else ""
-        cflags = "OTHER_CFLAGS = $(inherited) {}".format(" ".join(self._global_cflags)) if self._global_cflags else ""
-        cppflags = "OTHER_CPLUSPLUSFLAGS = $(inherited) {}".format(" ".join(self._global_cxxflags)) if self._global_cxxflags else ""
-        ldflags = "OTHER_LDFLAGS = $(inherited) {}".format(" ".join(self._global_ldflags)) if self._global_ldflags else ""
-        ret = self._flags_xconfig.format(defines=defines, cflags=cflags, cppflags=cppflags, ldflags=ldflags)
-        return ret
+        defines = (
+            f'GCC_PREPROCESSOR_DEFINITIONS = $(inherited) {" ".join(self._global_defines)}'
+            if self._global_defines
+            else ""
+        )
+        cflags = (
+            f'OTHER_CFLAGS = $(inherited) {" ".join(self._global_cflags)}'
+            if self._global_cflags
+            else ""
+        )
+        cppflags = (
+            f'OTHER_CPLUSPLUSFLAGS = $(inherited) {" ".join(self._global_cxxflags)}'
+            if self._global_cxxflags
+            else ""
+        )
+        ldflags = (
+            f'OTHER_LDFLAGS = $(inherited) {" ".join(self._global_ldflags)}'
+            if self._global_ldflags
+            else ""
+        )
+        return self._flags_xconfig.format(
+            defines=defines, cflags=cflags, cppflags=cppflags, ldflags=ldflags
+        )
 
     @property
     def _flags_xcconfig_filename(self):
-        return "conan_global_flags" + self.extension
+        return f"conan_global_flags{self.extension}"

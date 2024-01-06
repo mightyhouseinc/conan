@@ -29,9 +29,10 @@ class _CMakePresets:
             if "CMAKE_SH" not in cache_variables:
                 cache_variables["CMAKE_SH"] = "CMAKE_SH-NOTFOUND"
 
-        cmake_make_program = conanfile.conf.get("tools.gnu:make_program",
-                                                default=cache_variables.get("CMAKE_MAKE_PROGRAM"))
-        if cmake_make_program:
+        if cmake_make_program := conanfile.conf.get(
+            "tools.gnu:make_program",
+            default=cache_variables.get("CMAKE_MAKE_PROGRAM"),
+        ):
             cmake_make_program = cmake_make_program.replace("\\", "/")
             cache_variables["CMAKE_MAKE_PROGRAM"] = cmake_make_program
 
@@ -76,8 +77,9 @@ class _CMakePresets:
     def _insert_preset(data, preset_type, preset):
         presets = data.setdefault(preset_type, [])
         preset_name = preset["name"]
-        positions = [index for index, p in enumerate(presets) if p["name"] == preset_name]
-        if positions:
+        if positions := [
+            index for index, p in enumerate(presets) if p["name"] == preset_name
+        ]:
             data[preset_type][positions[0]] = preset
         else:
             data[preset_type].append(preset)
@@ -94,14 +96,14 @@ class _CMakePresets:
                                                multiconfig, preset_prefix, buildenv)
         build = _CMakePresets._build_preset_fields(conanfile, multiconfig, preset_prefix)
         test = _CMakePresets._test_preset_fields(conanfile, multiconfig, preset_prefix, runenv)
-        ret = {"version": 3,
-               "vendor": {"conan": {}},
-               "cmakeMinimumRequired": {"major": 3, "minor": 15, "patch": 0},
-               "configurePresets": [conf],
-               "buildPresets": [build],
-               "testPresets": [test]
-               }
-        return ret
+        return {
+            "version": 3,
+            "vendor": {"conan": {}},
+            "cmakeMinimumRequired": {"major": 3, "minor": 15, "patch": 0},
+            "configurePresets": [conf],
+            "buildPresets": [build],
+            "testPresets": [test],
+        }
 
     @staticmethod
     def _configure_preset(conanfile, generator, cache_variables, toolchain_file, multiconfig,
@@ -188,8 +190,9 @@ class _CMakePresets:
 
     @staticmethod
     def _build_preset_fields(conanfile, multiconfig, preset_prefix):
-        ret = _CMakePresets._common_preset_fields(conanfile, multiconfig, preset_prefix)
-        return ret
+        return _CMakePresets._common_preset_fields(
+            conanfile, multiconfig, preset_prefix
+        )
 
     @staticmethod
     def _test_preset_fields(conanfile, multiconfig, preset_prefix, runenv):
@@ -206,10 +209,7 @@ class _CMakePresets:
             return custom_conf
 
         if custom_conf:
-            if build_type:
-                return "{}-{}".format(custom_conf, build_type.lower())
-            else:
-                return custom_conf
+            return f"{custom_conf}-{build_type.lower()}" if build_type else custom_conf
         return build_type.lower() if build_type else "default"
 
     @staticmethod
@@ -224,7 +224,7 @@ class _CMakePresets:
             return "default" if not custom_conf else custom_conf
 
         if custom_conf:
-            return "{}-{}".format(custom_conf, str(build_type).lower())
+            return f"{custom_conf}-{str(build_type).lower()}"
         else:
             return str(build_type).lower()
 
@@ -298,8 +298,9 @@ class _IncludingPresets:
                         inherits = preset.get("inherits", [])
                         if isinstance(inherits, str):
                             inherits = [inherits]
-                        inherits = [i for i in inherits if i.startswith(preset_prefix)]
-                        if inherits:
+                        if inherits := [
+                            i for i in inherits if i.startswith(preset_prefix)
+                        ]:
                             existing = collected_targets.setdefault(preset_type, [])
                             for i in inherits:
                                 if i not in existing:

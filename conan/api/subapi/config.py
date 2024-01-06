@@ -90,7 +90,7 @@ class ConfigAPI:
         settings_path = _home_paths.settings_path
         if not os.path.exists(settings_path):
             save(settings_path, default_settings_yml)
-            save(settings_path + ".orig", default_settings_yml)  # stores a copy, to check migrations
+            save(f"{settings_path}.orig", default_settings_yml)
 
         def _load_settings(path):
             try:

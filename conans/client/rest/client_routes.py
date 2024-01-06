@@ -23,12 +23,12 @@ class ClientV2Router:
 
     def __init__(self, root_url):
         self.root_url = root_url
-        self.base_url = "{}/v2/".format(root_url)
+        self.base_url = f"{root_url}/v2/"
         self.routes = RestRoutes()
 
     def ping(self):
         # FIXME: The v2 ping is not returning capabilities
-        return "{}/v1/".format(self.root_url) + self.routes.ping
+        return f"{self.root_url}/v1/{self.routes.ping}"
 
     def search(self, pattern, ignorecase):
         """URL search recipes"""
@@ -39,8 +39,8 @@ class ClientV2Router:
             params = {"q": pattern}
             if not ignorecase:
                 params["ignorecase"] = "False"
-            query = "?%s" % urlencode(params)
-        return self.base_url + "%s%s" % (self.routes.common_search, query)
+            query = f"?{urlencode(params)}"
+        return f"{self.base_url}{self.routes.common_search}{query}"
 
     def search_packages(self, ref):
         """URL search packages for a recipe"""
@@ -142,9 +142,14 @@ class ClientV2Router:
 
     @staticmethod
     def _format_ref_path(url, ref, path):
-        ret = url.format(name=ref.name, version=ref.version, username=ref.user or "_",
-                         channel=ref.channel or "_", revision=ref.revision, path=path)
-        return ret
+        return url.format(
+            name=ref.name,
+            version=ref.version,
+            username=ref.user or "_",
+            channel=ref.channel or "_",
+            revision=ref.revision,
+            path=path,
+        )
 
     @staticmethod
     def _format_pref_path(url, pref, path):

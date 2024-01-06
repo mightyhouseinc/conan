@@ -13,9 +13,9 @@ class XcodeBuild(object):
     @property
     def _verbosity(self):
         verbosity = self._conanfile.conf.get("tools.build:verbosity", choices=("quiet", "verbose")) \
-                    or self._conanfile.conf.get("tools.compilation:verbosity",
+                        or self._conanfile.conf.get("tools.compilation:verbosity",
                                                 choices=("quiet", "verbose"))
-        return "-" + verbosity if verbosity is not None else ""
+        return f"-{verbosity}" if verbosity is not None else ""
 
     @property
     def _sdkroot(self):
@@ -24,8 +24,8 @@ class XcodeBuild(object):
         # chosen by the build system
         sdk = self._conanfile.conf.get("tools.apple:sdk_path")
         if not sdk and self._sdk:
-            sdk = "{}{}".format(self._sdk, self._sdk_version)
-        return "SDKROOT={}".format(sdk) if sdk else ""
+            sdk = f"{self._sdk}{self._sdk_version}"
+        return f"SDKROOT={sdk}" if sdk else ""
 
     def build(self, xcodeproj, target=None):
         """
@@ -37,8 +37,6 @@ class XcodeBuild(object):
                        will build all the targets passing the ``-alltargets`` argument instead.
         :return: the return code for the launched ``xcodebuild`` command.
         """
-        target = "-target {}".format(target) if target else "-alltargets"
-        cmd = "xcodebuild -project {} -configuration {} -arch {} " \
-              "{} {} {}".format(xcodeproj, self._build_type, self._arch, self._sdkroot,
-                                self._verbosity, target)
+        target = f"-target {target}" if target else "-alltargets"
+        cmd = f"xcodebuild -project {xcodeproj} -configuration {self._build_type} -arch {self._arch} {self._sdkroot} {self._verbosity} {target}"
         self._conanfile.run(cmd)

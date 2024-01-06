@@ -15,7 +15,7 @@ class TestToolsCustomVersions:
         client = TestClient()
         client.run_command('cmake --version')
         default_cmake_version = tools_locations["cmake"]["default"]
-        assert "cmake version {}".format(default_cmake_version) in client.out
+        assert f"cmake version {default_cmake_version}" in client.out
 
     @pytest.mark.tool("cmake", "3.16")
     def test_custom_cmake_3_16(self):

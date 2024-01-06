@@ -218,10 +218,7 @@ try:
 
     def update(d, u):
         for k, v in u.items():
-            if isinstance(v, dict):
-                d[k] = update(d.get(k, {}), v)
-            else:
-                d[k] = v
+            d[k] = update(d.get(k, {}), v) if isinstance(v, dict) else v
         return d
 
     update(tools_locations, user_tool_locations)
@@ -294,11 +291,11 @@ def _get_individual_tool(name, version):
             return False
         elif tool_path is not None and not os.path.isdir(tool_path):
             return True
-    else:
-        if version is not None:  # if the version is specified, it should be in the conf
-            return True
+    elif version is None:
         tool_path = None
 
+    else:  # if the version is specified, it should be in the conf
+        return True
     try:
         tool_env = tools_environments[name][tool_platform]
     except KeyError:
@@ -314,13 +311,7 @@ def _get_individual_tool(name, version):
     exe = tool.get("exe", name)
     exe_found = which(exe)  # TODO: This which doesn't detect version either
     exe_path = str(pathlib.Path(exe_found).parent) if exe_found else None
-    if not exe_found:
-        cached = True
-        if tool_path is None:
-            # will fail the test, not exe found and path None
-            cached = True
-    elif tool_path is not None and tool_path not in exe_found:
-        # finds the exe in a path that is not the one set in the conf -> fail
+    if not exe_found or tool_path is not None and tool_path not in exe_found:
         cached = True
     elif tool_path is None:
         cached = exe_path, tool_env
@@ -350,11 +341,11 @@ def pytest_runtest_setup(item):
     tools_env_vars = dict()
     for mark in item.iter_markers():
         if mark.name.startswith("tool_"):
-            raise Exception("Invalid decorator @pytest.mark.{}".format(mark.name))
+            raise Exception(f"Invalid decorator @pytest.mark.{mark.name}")
 
     kwargs = [mark.kwargs for mark in item.iter_markers(name="tool")]
     if any(kwargs):
-        raise Exception("Invalid decorator @pytest.mark Do not use kwargs: {}".format(kwargs))
+        raise Exception(f"Invalid decorator @pytest.mark Do not use kwargs: {kwargs}")
     tools_params = [mark.args for mark in item.iter_markers(name="tool")]
     for tool_params in tools_params:
         if len(tool_params) == 1:
@@ -363,17 +354,19 @@ def pytest_runtest_setup(item):
         elif len(tool_params) == 2:
             tool_name, tool_version = tool_params
         else:
-            raise Exception("Invalid arguments for mark.tool: {}".format(tool_params))
+            raise Exception(f"Invalid arguments for mark.tool: {tool_params}")
 
         result = _get_tool(tool_name, tool_version)
         if result is True:
             version_msg = "Any" if tool_version is None else tool_version
-            pytest.fail("Required '{}' tool version '{}' is not available".format(tool_name,
-                                                                                  version_msg))
+            pytest.fail(
+                f"Required '{tool_name}' tool version '{version_msg}' is not available"
+            )
         if result is False:
             version_msg = "Any" if tool_version is None else tool_version
-            pytest.skip("Required '{}' tool version '{}' is not available".format(tool_name,
-                                                                                  version_msg))
+            pytest.skip(
+                f"Required '{tool_name}' tool version '{version_msg}' is not available"
+            )
 
         tool_path, tool_env = result
         if tool_path:

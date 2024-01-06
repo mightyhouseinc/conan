@@ -19,7 +19,7 @@ class RowResult(object):
 
     def row(self, headers):
         """ Returns package data according to headers """
-        assert isinstance(headers, Headers), "Wrong type: {}".format(type(headers))
+        assert isinstance(headers, Headers), f"Wrong type: {type(headers)}"
 
         for it in headers.keys:
             try:
@@ -101,7 +101,7 @@ class Headers(object):
                 ret.setdefault(setting, []).append('')
             else:
                 ret.setdefault(category, []).append(value)
-        return [(key, values) for key, values in ret.items()]
+        return list(ret.items())
 
 
 class Results(object):
@@ -134,8 +134,7 @@ class Results(object):
             remote = it['remote']
             reference = it['items'][0]['recipe']['id']
             for p in it['items'][0]['packages']:
-                r = RowResult(remote, reference, p)
-                yield r
+                yield RowResult(remote, reference, p)
 
 
 

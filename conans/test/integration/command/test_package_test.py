@@ -36,7 +36,7 @@ class TestPackageTest(unittest.TestCase):
 
         self.assertNotIn("Exporting package recipe", client.out)
         self.assertNotIn("Forced build from source", client.out)
-        self.assertNotIn("Package '%s' created" % NO_SETTINGS_PACKAGE_ID, client.out)
+        self.assertNotIn(f"Package '{NO_SETTINGS_PACKAGE_ID}' created", client.out)
         self.assertNotIn("Forced build from source", client.out)
         self.assertIn("hello/0.1@lasote/stable: Already installed!", client.out)
 
@@ -79,15 +79,17 @@ class TestPackageTest(unittest.TestCase):
         # Path with conanfile.txt
         client.run("test conanfile.txt other/0.2@user2/channel2", assert_error=True)
 
-        self.assertIn("A conanfile.py is needed, %s is not acceptable"
-                      % os.path.join(client.current_folder, "conanfile.txt"),
-                      client.out)
+        self.assertIn(
+            f'A conanfile.py is needed, {os.path.join(client.current_folder, "conanfile.txt")} is not acceptable',
+            client.out,
+        )
 
         # Path with wrong conanfile path
         client.run("test not_real_dir/conanfile.py other/0.2@user2/channel2", assert_error=True)
-        self.assertIn("Conanfile not found at %s"
-                      % os.path.join(client.current_folder, "not_real_dir", "conanfile.py"),
-                      client.out)
+        self.assertIn(
+            f'Conanfile not found at {os.path.join(client.current_folder, "not_real_dir", "conanfile.py")}',
+            client.out,
+        )
 
     def test_check_version(self):
         client = TestClient()
@@ -201,7 +203,7 @@ class HelloConan(ConanFile):
         def test(conanfile_test, test_reference, path=None):
             path = path or "."
             client.save({os.path.join(path, CONANFILE): conanfile_test}, clean_first=True)
-            client.run("test %s %s" % (path, test_reference))
+            client.run(f"test {path} {test_reference}")
 
         # Specify a valid name
         test('''
@@ -351,7 +353,7 @@ def test_tested_reference_str():
     client.save({"conanfile.py": GenConanfile(), "test_package/conanfile.py": test_conanfile})
     client.run("create . --name=foo --version=1.0")
     for method in ("generate", "build", "build_requirements", "test"):
-        assert "At {}: foo/1.0".format(method) in client.out
+        assert f"At {method}: foo/1.0" in client.out
 
 
 def test_folder_output():

@@ -84,8 +84,9 @@ def write_generators(conanfile, app):
     try:
         for generator_name in old_generators:
             global_generator = global_generators.get(generator_name)
-            generator_class = global_generator or _get_generator_class(generator_name)
-            if generator_class:
+            if generator_class := global_generator or _get_generator_class(
+                generator_name
+            ):
                 try:
                     generator = generator_class(conanfile)
                     mkdir(new_gen_folder)
@@ -161,13 +162,13 @@ def _generate_aggregated_env(conanfile):
             # Only the .bat and .ps1 are made relative to current script
             if env_script.endswith(".bat"):
                 path = os.path.relpath(path, conanfile.generators_folder)
-                bats.append("%~dp0/"+path)
+                bats.append(f"%~dp0/{path}")
             elif env_script.endswith(".sh"):
                 shs.append(subsystem_path(subsystem, path))
             elif env_script.endswith(".ps1"):
                 path = os.path.relpath(path, conanfile.generators_folder)
                 # This $PSScriptRoot uses the current script directory
-                ps1s.append("$PSScriptRoot/"+path)
+                ps1s.append(f"$PSScriptRoot/{path}")
         if shs:
             def sh_content(files):
                 return ". " + " && . ".join('"{}"'.format(s) for s in files)

@@ -27,8 +27,8 @@ def test_basic(relative_path):
     reg_path = ref_layoyt.export()
     manif = FileTreeManifest.load(reg_path)
 
-    assert '%s: Exported' % str(ref) in client.out
-    assert '%s: Exported to cache folder: %s' % (str(ref), reg_path) in client.out
+    assert f'{str(ref)}: Exported' in client.out
+    assert f'{str(ref)}: Exported to cache folder: {reg_path}' in client.out
 
     for name in list(files.keys()):
         assert os.path.exists(os.path.join(reg_path, name))

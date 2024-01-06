@@ -90,9 +90,9 @@ class VSRuntimeBlock(Block):
         config_dict = {}
         if os.path.exists(CONAN_TOOLCHAIN_FILENAME):
             existing_include = load(CONAN_TOOLCHAIN_FILENAME)
-            msvc_runtime_value = re.search(r"set\(CMAKE_MSVC_RUNTIME_LIBRARY \"([^)]*)\"\)",
-                                           existing_include)
-            if msvc_runtime_value:
+            if msvc_runtime_value := re.search(
+                r"set\(CMAKE_MSVC_RUNTIME_LIBRARY \"([^)]*)\"\)", existing_include
+            ):
                 capture = msvc_runtime_value.group(1)
                 matches = re.findall(r"\$<\$<CONFIG:([A-Za-z]*)>:([A-Za-z]*)>", capture)
                 config_dict = dict(matches)
@@ -101,19 +101,19 @@ class VSRuntimeBlock(Block):
         if build_type is None:
             return None
 
-        if compiler == "msvc" or compiler == "intel-cc" or compiler == "clang":
+        if compiler in ["msvc", "intel-cc", "clang"]:
             runtime_type = settings.get_safe("compiler.runtime_type")
             rt = "MultiThreadedDebug" if runtime_type == "Debug" else "MultiThreaded"
             if runtime != "static":
                 rt += "DLL"
             config_dict[build_type] = rt
 
-            # If clang is being used the CMake check of compiler will try to create a simple
-            # test application, and will fail because the Debug runtime is not there
-            if compiler == "clang":
-                if config_dict.get("Debug") is None:
-                    clang_rt = "MultiThreadedDebug" + ("DLL" if runtime != "static" else "")
-                    config_dict["Debug"] = clang_rt
+        # If clang is being used the CMake check of compiler will try to create a simple
+        # test application, and will fail because the Debug runtime is not there
+        if compiler == "clang":
+            if config_dict.get("Debug") is None:
+                clang_rt = "MultiThreadedDebug" + ("DLL" if runtime != "static" else "")
+                config_dict["Debug"] = clang_rt
 
         return {"vs_runtimes": config_dict}
 
@@ -177,10 +177,10 @@ class ArchitectureBlock(Block):
         """)
 
     def context(self):
-        arch_flag = architecture_flag(self._conanfile.settings)
-        if not arch_flag:
+        if arch_flag := architecture_flag(self._conanfile.settings):
+            return {"arch_flag": arch_flag}
+        else:
             return
-        return {"arch_flag": arch_flag}
 
 
 class LinkerScriptsBlock(Block):
@@ -194,7 +194,9 @@ class LinkerScriptsBlock(Block):
         if not linker_scripts:
             return
         linker_scripts = [linker_script.replace('\\', '/') for linker_script in linker_scripts]
-        linker_script_flags = ['-T"' + linker_script + '"' for linker_script in linker_scripts]
+        linker_script_flags = [
+            f'-T"{linker_script}"' for linker_script in linker_scripts
+        ]
         return {"linker_script_flags": " ".join(linker_script_flags)}
 
 
@@ -247,8 +249,7 @@ class ParallelBlock(Block):
         if compiler != "msvc" or "Visual" not in self._toolchain.generator:
             return
 
-        jobs = build_jobs(self._conanfile)
-        if jobs:
+        if jobs := build_jobs(self._conanfile):
             return {"parallel": jobs}
 
 
@@ -286,14 +287,13 @@ class AndroidSystemBlock(Block):
         if use_cmake_legacy_toolchain is not None:
             use_cmake_legacy_toolchain = "ON" if use_cmake_legacy_toolchain else "OFF"
 
-        ctxt_toolchain = {
-            'android_platform': 'android-' + str(self._conanfile.settings.os.api_level),
+        return {
+            'android_platform': f'android-{str(self._conanfile.settings.os.api_level)}',
             'android_abi': android_abi(self._conanfile),
             'android_stl': libcxx_str,
             'android_ndk_path': android_ndk_path,
             'android_use_legacy_toolchain_file': use_cmake_legacy_toolchain,
         }
-        return ctxt_toolchain
 
 
 class AppleSystemBlock(Block):
@@ -456,14 +456,9 @@ class FindFiles(Block):
                                         .replace('"', '\\"')) for p in paths])
 
     def context(self):
-        # To find the generated cmake_find_package finders
-        # TODO: Change this for parameterized output location of CMakeDeps
-        find_package_prefer_config = "ON"  # assume ON by default if not specified in conf
         prefer_config = self._conanfile.conf.get("tools.cmake.cmaketoolchain:find_package_prefer_config",
                                                  check_type=bool)
-        if prefer_config is False:
-            find_package_prefer_config = "OFF"
-
+        find_package_prefer_config = "OFF" if prefer_config is False else "ON"
         is_apple_ = is_apple_os(self._conanfile)
 
         # Read information from host context
@@ -626,16 +621,15 @@ class CompilersBlock(Block):
         # Reading configuration from "tools.build:compiler_executables" -> {"C": "/usr/bin/gcc"}
         compilers_by_conf = self._conanfile.conf.get("tools.build:compiler_executables", default={},
                                                      check_type=dict)
-        # Map the possible languages
-        compilers = {}
         # Allowed <LANG> variables (and <LANG>_LAUNCHER)
         compilers_mapping = {"c": "C", "cuda": "CUDA", "cpp": "CXX", "objc": "OBJC",
                              "objcpp": "OBJCXX", "rc": "RC", 'fortran': "Fortran", 'asm': "ASM",
                              "hip": "HIP", "ispc": "ISPC"}
-        for comp, lang in compilers_mapping.items():
-            # To set CMAKE_<LANG>_COMPILER
-            if comp in compilers_by_conf:
-                compilers[lang] = compilers_by_conf[comp]
+        compilers = {
+            lang: compilers_by_conf[comp]
+            for comp, lang in compilers_mapping.items()
+            if comp in compilers_by_conf
+        }
         return {"compilers": compilers}
 
 
@@ -697,7 +691,7 @@ class GenericSystemBlock(Block):
                 compiler_update = str(settings.compiler.update)
                 if compiler_update != "None":  # It is full one(19.28), not generic 19.2X
                     # The equivalent of compiler 19.26 is toolset 14.26
-                    toolset = "version=14.{}{}".format(compiler_version[-1], compiler_update)
+                    toolset = f"version=14.{compiler_version[-1]}{compiler_update}"
                 else:
                     toolset = msvc_version_to_toolset_version(compiler_version)
         elif compiler == "clang":
@@ -709,8 +703,8 @@ class GenericSystemBlock(Block):
                                          "'Visual Studio' generator requires VS16 or VS17")
         toolset_arch = conanfile.conf.get("tools.cmake.cmaketoolchain:toolset_arch")
         if toolset_arch is not None:
-            toolset_arch = "host={}".format(toolset_arch)
-            toolset = toolset_arch if toolset is None else "{},{}".format(toolset, toolset_arch)
+            toolset_arch = f"host={toolset_arch}"
+            toolset = toolset_arch if toolset is None else f"{toolset},{toolset_arch}"
         return toolset
 
     @staticmethod
@@ -743,9 +737,11 @@ class GenericSystemBlock(Block):
         if os_host != os_build:
             return cmake_system_name_map.get(os_host, os_host)
         elif arch_host is not None and arch_host != arch_build:
-            if not ((arch_build == "x86_64") and (arch_host == "x86") or
-                    (arch_build == "sparcv9") and (arch_host == "sparc") or
-                    (arch_build == "ppc64") and (arch_host == "ppc32")):
+            if (
+                (arch_build != "x86_64" or arch_host != "x86")
+                and (arch_build != "sparcv9" or arch_host != "sparc")
+                and (arch_build != "ppc64" or arch_host != "ppc32")
+            ):
                 return cmake_system_name_map.get(os_host, os_host)
 
     def _is_apple_cross_building(self):
@@ -919,7 +915,6 @@ class ToolchainBlocks:
     def process_blocks(self):
         result = []
         for b in self._blocks.values():
-            content = b.get_rendered_content()
-            if content:
+            if content := b.get_rendered_content():
                 result.append(content)
         return result

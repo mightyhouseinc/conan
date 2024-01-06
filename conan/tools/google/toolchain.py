@@ -132,7 +132,7 @@ class BazelToolchain:
         conf_flags.extend(self._conanfile.conf.get("tools.build:exelinkflags", default=[],
                                                    check_type=list))
         linker_scripts = self._conanfile.conf.get("tools.build:linker_scripts", default=[], check_type=list)
-        conf_flags.extend(["-T'" + linker_script + "'" for linker_script in linker_scripts])
+        conf_flags.extend([f"-T'{linker_script}'" for linker_script in linker_scripts])
         ret = self.linkopt + conf_flags
         return self._filter_list_empty_fields(ret)
 
@@ -153,8 +153,7 @@ class BazelToolchain:
     @property
     def _content(self):
         context = self._context()
-        content = Template(self.bazelrc_template).render(context)
-        return content
+        return Template(self.bazelrc_template).render(context)
 
     def generate(self):
         """

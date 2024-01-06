@@ -154,8 +154,8 @@ def test_build_require_conanfile_text(client):
     cmd = environment_wrap_command("conanbuild", client.current_folder, f"mycmake{ext}")
     client.run_command(cmd)
     system = {"Darwin": "Macos"}.get(platform.system(), platform.system())
-    assert "MYCMAKE={}!!".format(system) in client.out
-    assert "MYOPENSSL={}!!".format(system) in client.out
+    assert f"MYCMAKE={system}!!" in client.out
+    assert f"MYOPENSSL={system}!!" in client.out
 
 
 def test_build_require_command_line_build_context(client):
@@ -164,8 +164,8 @@ def test_build_require_command_line_build_context(client):
     cmd = environment_wrap_command("conanbuild", client.current_folder, f"mycmake{ext}")
     client.run_command(cmd)
     system = {"Darwin": "Macos"}.get(platform.system(), platform.system())
-    assert "MYCMAKE={}!!".format(system) in client.out
-    assert "MYOPENSSL={}!!".format(system) in client.out
+    assert f"MYCMAKE={system}!!" in client.out
+    assert f"MYOPENSSL={system}!!" in client.out
 
 
 def test_install_multiple_tool_requires_cli():
