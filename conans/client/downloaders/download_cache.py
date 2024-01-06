@@ -77,7 +77,7 @@ class DownloadCache:
         for path in os.listdir(path_backups):
             if not path.endswith(".json"):
                 blob_path = os.path.join(path_backups, path)
-                metadata_path = os.path.join(blob_path + ".json")
+                metadata_path = os.path.join(f"{blob_path}.json")
                 metadata = json.loads(load(metadata_path))
                 refs = metadata["references"]
                 # unknown entries are not uploaded at this moment unless no package_list is passed
@@ -92,7 +92,7 @@ class DownloadCache:
     def update_backup_sources_json(cached_path, conanfile, urls):
         """ create or update the sha256.json file with the references and new urls used
         """
-        summary_path = cached_path + ".json"
+        summary_path = f"{cached_path}.json"
         if os.path.exists(summary_path):
             summary = json.loads(load(summary_path))
         else:

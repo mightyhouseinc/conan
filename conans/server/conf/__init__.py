@@ -70,13 +70,12 @@ class ConanServerConfigParser(ConfigParser):
                 # To avoid encoding problems we use our tools.load
                 self.read_string(load(self.config_filename))
 
-            if varname:
-                section = dict(self.items(section))
-                return section[varname]
-            else:
+            if not varname:
                 return self.items(section)
+            section = dict(self.items(section))
+            return section[varname]
         except NoSectionError:
-            raise ConanException("No section '%s' found" % section)
+            raise ConanException(f"No section '{section}' found")
         except Exception as exc:
             raise ConanException("Invalid configuration, "
                                  "missing %s: %s" % (section, varname))
@@ -85,7 +84,7 @@ class ConanServerConfigParser(ConfigParser):
     def ssl_enabled(self):
         try:
             ssl_enabled = self._get_conf_server_string("ssl_enabled").lower()
-            return ssl_enabled == "true" or ssl_enabled == "1"
+            return ssl_enabled in ["true", "1"]
         except ConanException:
             return None
 
@@ -120,8 +119,8 @@ class ConanServerConfigParser(ConfigParser):
             raise ConanException("'host_name' and 'ssl_enable' have to be defined together.")
         else:
             protocol = "https" if ssl_enabled else "http"
-            port = ":%s" % self.public_port if self.public_port != 80 else ""
-            return "%s://%s%s/%s" % (protocol, host_name, port, protocol_version)
+            port = f":{self.public_port}" if self.public_port != 80 else ""
+            return f"{protocol}://{host_name}{port}/{protocol_version}"
 
     @property
     def disk_storage_path(self):
@@ -212,7 +211,9 @@ class ConanServerConfigParser(ConfigParser):
 
         value = self._get_file_conf("server", keyname)
         if value == "":
-            raise ConanException("no value for 'server.%s' is defined in the config file" % keyname)
+            raise ConanException(
+                f"no value for 'server.{keyname}' is defined in the config file"
+            )
         return value
 
     @property
@@ -225,6 +226,6 @@ class ConanServerConfigParser(ConfigParser):
 
 
 def get_server_store(disk_storage_path, public_url):
-    disk_controller_url = "%s/%s" % (public_url, "files")
+    disk_controller_url = f"{public_url}/files"
     adapter = ServerDiskAdapter(disk_controller_url, disk_storage_path)
     return ServerStore(adapter)

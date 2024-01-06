@@ -66,7 +66,7 @@ def cmd_export(app, global_conf, conanfile_path, name, version, user, channel, g
     ref.revision = revision
     recipe_layout.reference = ref
     cache.assign_rrev(recipe_layout)
-    scoped_output.info('Exported to cache folder: %s' % recipe_layout.export())
+    scoped_output.info(f'Exported to cache folder: {recipe_layout.export()}')
 
     # TODO: cache2.0: check this part
     source_folder = recipe_layout.source()
@@ -99,16 +99,15 @@ def _calc_revision(scoped_output, path, manifest, revision_mode):
             with chdir(path):
                 revision = check_output_runner(f'git rev-list HEAD -n 1 --full-history {f}').strip()
         except Exception as exc:
-            error_msg = "Cannot detect revision using '{}' mode from repository at " \
-                        "'{}'".format(revision_mode, path)
-            raise ConanException("{}: {}".format(error_msg, exc))
+            error_msg = f"Cannot detect revision using '{revision_mode}' mode from repository at '{path}'"
+            raise ConanException(f"{error_msg}: {exc}")
 
         with chdir(path):
             if bool(check_output_runner(f'git status -s {f}').strip()):
                 raise ConanException("Can't have a dirty repository using revision_mode='scm' and doing"
                                      " 'conan export', please commit the changes and run again.")
 
-        scoped_output.info("Using git commit as the recipe revision: %s" % revision)
+        scoped_output.info(f"Using git commit as the recipe revision: {revision}")
 
     return revision
 
@@ -150,10 +149,10 @@ def export_recipe(conanfile, destination_folder):
     if isinstance(conanfile.exports, str):
         conanfile.exports = (conanfile.exports,)
 
-    package_output = ConanOutput(scope="%s: exports" % conanfile.output.scope)
+    package_output = ConanOutput(scope=f"{conanfile.output.scope}: exports")
 
     if os.path.exists(os.path.join(conanfile.recipe_folder, DATA_YML)):
-        package_output.info("File '{}' found. Exporting it...".format(DATA_YML))
+        package_output.info(f"File '{DATA_YML}' found. Exporting it...")
         tmp = [DATA_YML]
         if conanfile.exports:
             tmp.extend(conanfile.exports)  # conanfile.exports could be a tuple (immutable)
@@ -172,12 +171,11 @@ def export_recipe(conanfile, destination_folder):
 
 
 def _run_method(conanfile, method):
-    export_method = getattr(conanfile, method, None)
-    if export_method:
+    if export_method := getattr(conanfile, method, None):
         if not callable(export_method):
-            raise ConanException("conanfile '%s' must be a method" % method)
+            raise ConanException(f"conanfile '{method}' must be a method")
 
-        conanfile.output.highlight("Calling %s()" % method)
+        conanfile.output.highlight(f"Calling {method}()")
         default_options = conanfile.default_options
         options = conanfile.options
         try:

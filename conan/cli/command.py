@@ -35,14 +35,15 @@ class BaseConanCommand:
                 if callable(action):
                     self._formatters[kind] = action
                 else:
-                    raise ConanException("Invalid formatter for {}. The formatter must be"
-                                         "a valid function".format(kind))
+                    raise ConanException(
+                        f"Invalid formatter for {kind}. The formatter must bea valid function"
+                    )
         if method.__doc__:
             self._doc = method.__doc__
         else:
-            raise ConanException("No documentation string defined for command: '{}'. Conan "
-                                 "commands should provide a documentation string explaining "
-                                 "its use briefly.".format(self._name))
+            raise ConanException(
+                f"No documentation string defined for command: '{self._name}'. Conan commands should provide a documentation string explaining its use briefly."
+            )
 
     @staticmethod
     def _init_log_levels(parser):
@@ -60,9 +61,8 @@ class BaseConanCommand:
         return [formatter for formatter in self._formatters if formatter != "text"]
 
     def _init_formatters(self, parser):
-        formatters = self._help_formatters
-        if formatters:
-            help_message = "Select the output format: {}".format(", ".join(formatters))
+        if formatters := self._help_formatters:
+            help_message = f'Select the output format: {", ".join(formatters)}'
             parser.add_argument('-f', '--format', action=OnceArgument, help=help_message)
 
     @property
@@ -89,8 +89,9 @@ class BaseConanCommand:
         try:
             formatter = self._formatters[formatarg]
         except KeyError:
-            raise ConanException("{} is not a known format. Supported formatters are: {}".format(
-                formatarg, ", ".join(self._help_formatters)))
+            raise ConanException(
+                f'{formatarg} is not a known format. Supported formatters are: {", ".join(self._help_formatters)}'
+            )
 
         formatter(info)
 
@@ -118,8 +119,11 @@ class ConanCommand(BaseConanCommand):
         self._subcommands[subcommand.name] = subcommand
 
     def run(self, conan_api, *args):
-        parser = ConanArgumentParser(description=self._doc, prog="conan {}".format(self._name),
-                                     formatter_class=SmartFormatter)
+        parser = ConanArgumentParser(
+            description=self._doc,
+            prog=f"conan {self._name}",
+            formatter_class=SmartFormatter,
+        )
         self._init_log_levels(parser)
         self._init_formatters(parser)
 

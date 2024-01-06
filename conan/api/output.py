@@ -123,7 +123,7 @@ class ConanOutput:
         if self._conan_output_level > LEVEL_NOTICE:
             return self
         if self._color and (fg or bg):
-            data = "%s%s%s%s" % (fg or '', bg or '', data, Style.RESET_ALL)
+            data = f"{fg or ''}{bg or ''}{data}{Style.RESET_ALL}"
 
         if newline:
             data = "%s\n" % data
@@ -135,9 +135,9 @@ class ConanOutput:
         tmp_color = self._color
         self._color = False
         total_size = 70
-        limit_size = total_size // 2 - 3
         if len(line) > total_size:
-            line = line[0:limit_size] + " ... " + line[-limit_size:]
+            limit_size = total_size // 2 - 3
+            line = f"{line[:limit_size]} ... {line[-limit_size:]}"
         self.write("\r%s%s" % (line, " " * (total_size - len(line))))
         self.stream.flush()
         self._color = tmp_color
@@ -147,22 +147,22 @@ class ConanOutput:
             # For traces we can receive a dict already, we try to transform then into more natural
             # text
             msg = ", ".join([f"{k}: {v}" for k, v in msg.items()])
-            msg = "=> {}".format(msg)
-            # msg = json.dumps(msg, sort_keys=True, default=json_encoder)
+            msg = f"=> {msg}"
+                # msg = json.dumps(msg, sort_keys=True, default=json_encoder)
 
         ret = ""
         if self._scope:
             if self._color:
-                ret = "{}{}{}:{} ".format(fg or '', bg or '', self.scope, Style.RESET_ALL)
+                ret = f"{fg or ''}{bg or ''}{self.scope}:{Style.RESET_ALL} "
             else:
-                ret = "{}: ".format(self._scope)
+                ret = f"{self._scope}: "
 
         if self._color:
-            ret += "{}{}{}{}".format(fg or '', bg or '', msg, Style.RESET_ALL)
+            ret += f"{fg or ''}{bg or ''}{msg}{Style.RESET_ALL}"
         else:
-            ret += "{}".format(msg)
+            ret += f"{msg}"
 
-        self.stream.write("{}\n".format(ret))
+        self.stream.write(f"{ret}\n")
         self.stream.flush()
 
     def trace(self, msg):
@@ -190,14 +190,12 @@ class ConanOutput:
 
     def title(self, msg):
         if self._conan_output_level <= LEVEL_NOTICE:
-            self._write_message("\n======== {} ========".format(msg),
-                                fg=Color.BRIGHT_MAGENTA)
+            self._write_message(f"\n======== {msg} ========", fg=Color.BRIGHT_MAGENTA)
         return self
 
     def subtitle(self, msg):
         if self._conan_output_level <= LEVEL_NOTICE:
-            self._write_message("\n-------- {} --------".format(msg),
-                                fg=Color.BRIGHT_MAGENTA)
+            self._write_message(f"\n-------- {msg} --------", fg=Color.BRIGHT_MAGENTA)
         return self
 
     def highlight(self, msg):
@@ -233,7 +231,7 @@ class ConanOutput:
         if self._warnings_as_errors and error_type != "exception":
             raise ConanException(msg)
         if self._conan_output_level <= LEVEL_ERROR:
-            self._write_message("ERROR: {}".format(msg), Color.RED)
+            self._write_message(f"ERROR: {msg}", Color.RED)
         return self
 
     def flush(self):

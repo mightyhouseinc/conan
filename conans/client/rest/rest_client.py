@@ -11,10 +11,15 @@ class RestApiClientFactory(object):
         self._cached_capabilities = {}
 
     def new(self, remote, token, refresh_token, custom_headers):
-        tmp = RestApiClient(remote, token, refresh_token, custom_headers,
-                            self._requester, self._config,
-                            self._cached_capabilities)
-        return tmp
+        return RestApiClient(
+            remote,
+            token,
+            refresh_token,
+            custom_headers,
+            self._requester,
+            self._config,
+            self._cached_capabilities,
+        )
 
 
 class RestApiClient(object):

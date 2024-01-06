@@ -43,7 +43,9 @@ def retrieve_exports_sources(remote_manager, recipe_layout, conanfile, ref, remo
                % str(ref))
         raise ConanException(msg)
 
-    ConanOutput(scope=str(ref)).info("Sources downloaded from '{}'".format(sources_remote.name))
+    ConanOutput(scope=str(ref)).info(
+        f"Sources downloaded from '{sources_remote.name}'"
+    )
 
 
 def config_source(export_source_folder, conanfile, hook_manager):
@@ -80,7 +82,7 @@ def run_source_method(conanfile, hook_manager):
     with chdir(conanfile.source_folder):
         hook_manager.execute("pre_source", conanfile=conanfile)
         if hasattr(conanfile, "source"):
-            conanfile.output.highlight("Calling source() in {}".format(conanfile.source_folder))
+            conanfile.output.highlight(f"Calling source() in {conanfile.source_folder}")
             with conanfile_exception_formatter(conanfile, "source"):
                 with conanfile_remove_attr(conanfile, ['settings', "options"], "source"):
                     conanfile.source()

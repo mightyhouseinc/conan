@@ -61,7 +61,9 @@ def test_transitive_multi_windows(client):
     with client.chdir("build"):
         for bt in ("Debug", "Release"):
             # NOTE: -of=. otherwise the output files are located in the parent directory
-            client.run("install .. --user=user --channel=channel -s build_type={} -of=.".format(bt))
+            client.run(
+                f"install .. --user=user --channel=channel -s build_type={bt} -of=."
+            )
 
         # Test that we are using find_dependency with the NO_MODULE option
         # to skip finding first possible FindBye somewhere
@@ -88,14 +90,15 @@ def test_transitive_multi_windows(client):
             replace_in_file(ConanFileMock(), os.path.join(client.current_folder, "CMakePresets.json"),
                             "CMAKE_BUILD_TYPE", "DONT_MESS_WITH_BUILD_TYPE")
             for bt in ("Debug", "Release"):
-                client.run_command('cmake .. -DCMAKE_BUILD_TYPE={} '
-                                   '-DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake'.format(bt))
+                client.run_command(
+                    f'cmake .. -DCMAKE_BUILD_TYPE={bt} -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake'
+                )
                 client.run_command('cmake --build . --clean-first')
 
                 client.run_command('./example')
-                assert "main: {}!".format(bt) in client.out
-                assert "MYVARliba: {}".format(bt) in client.out
-                assert "MYVARlibb: {}".format(bt) in client.out
+                assert f"main: {bt}!" in client.out
+                assert f"MYVARliba: {bt}" in client.out
+                assert f"MYVARlibb: {bt}" in client.out
 
 
 @pytest.mark.tool("cmake")
@@ -154,16 +157,16 @@ def test_system_libs():
     for build_type in ["Release", "Debug"]:
         client.save({"conanfile.txt": conanfile,
                      "CMakeLists.txt": cmakelists % build_type.upper()}, clean_first=True)
-        client.run("install conanfile.txt -s build_type=%s" % build_type)
+        client.run(f"install conanfile.txt -s build_type={build_type}")
         client.run_command('cmake . -DCMAKE_BUILD_TYPE={0}'.format(build_type))
 
         library_name = "sys1d" if build_type == "Debug" else "sys1"
         # FIXME: Note it is CONAN_LIB::test_lib1_RELEASE, not "lib1" as cmake_find_package
         if build_type == "Release":
-            assert "System libs release: %s" % library_name in client.out
+            assert f"System libs release: {library_name}" in client.out
             assert "Libraries to Link release: lib1" in client.out
         else:
-            assert "System libs debug: %s" % library_name in client.out
+            assert f"System libs debug: {library_name}" in client.out
             assert "Libraries to Link debug: lib1" in client.out
 
         assert f"Target libs: $<$<CONFIG:{build_type}>:>;$<$<CONFIG:{build_type}>:CONAN_LIB::test_lib1_{build_type.upper()}>" in client.out
@@ -225,7 +228,7 @@ def test_system_libs_no_libs():
 
     for build_type in ["Release", "Debug"]:
         client.save({"conanfile.txt": conanfile, "CMakeLists.txt": cmakelists}, clean_first=True)
-        client.run("install conanfile.txt -s build_type=%s" % build_type)
+        client.run(f"install conanfile.txt -s build_type={build_type}")
         client.run_command('cmake . -DCMAKE_BUILD_TYPE={0}'.format(build_type))
 
         library_name = "sys1d" if build_type == "Debug" else "sys1"
@@ -330,7 +333,7 @@ def test_system_libs_components_no_libs():
 
     for build_type in ["Release", "Debug"]:
         client.save({"conanfile.txt": conanfile, "CMakeLists.txt": cmakelists}, clean_first=True)
-        client.run("install conanfile.txt -s build_type=%s" % build_type)
+        client.run(f"install conanfile.txt -s build_type={build_type}")
         client.run_command('cmake . -DCMAKE_BUILD_TYPE={0}'.format(build_type))
 
         library_name = "sys1d" if build_type == "Debug" else "sys1"
@@ -459,7 +462,7 @@ def test_buildirs_working():
 def test_cpp_info_link_objects():
     client = TestClient()
     obj_ext = "obj" if platform.system() == "Windows" else "o"
-    cpp_info = {"objects": [os.path.join("lib", "myobject.{}".format(obj_ext))]}
+    cpp_info = {"objects": [os.path.join("lib", f"myobject.{obj_ext}")]}
     object_cpp = gen_function_cpp(name="myobject")
     object_h = gen_function_h(name="myobject")
     cmakelists = textwrap.dedent("""
@@ -613,7 +616,9 @@ def test_error_missing_build_type(matrix_client):
         "Linux": '-G "Ninja Multi-Config"'
     }.get(platform.system())
 
-    client.run_command("cmake . -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake {}".format(generator))
+    client.run_command(
+        f"cmake . -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake {generator}"
+    )
     client.run_command("cmake --build . --config Release")
     run_app = r".\Release\app.exe" if platform.system() == "Windows" else "./Release/app"
     client.run_command(run_app)

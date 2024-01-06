@@ -30,25 +30,25 @@ class RecipeReference:
         """ long repr like pkg/0.1@user/channel#rrev%timestamp """
         result = self.repr_notime()
         if self.timestamp is not None:
-            result += "%{}".format(self.timestamp)
+            result += f"%{self.timestamp}"
         return result
 
     def repr_notime(self):
         result = self.__str__()
         if self.revision is not None:
-            result += "#{}".format(self.revision)
+            result += f"#{self.revision}"
         return result
 
     def repr_reduced(self):
         result = self.__str__()
         if self.revision is not None:
-            result += "#{}".format(self.revision[0:4])
+            result += f"#{self.revision[:4]}"
         return result
 
     def repr_humantime(self):
         result = self.repr_notime()
         assert self.timestamp
-        result += " ({})".format(timestamp_to_str(self.timestamp))
+        result += f" ({timestamp_to_str(self.timestamp)})"
         return result
 
     def __str__(self):
@@ -57,10 +57,10 @@ class RecipeReference:
             return ""
         result = "/".join([self.name, str(self.version)])
         if self.user:
-            result += "@{}".format(self.user)
+            result += f"@{self.user}"
         if self.channel:
             assert self.user
-            result += "/{}".format(self.channel)
+            result += f"/{self.channel}"
         return result
 
     def __lt__(self, ref):
@@ -127,11 +127,11 @@ class RecipeReference:
         from conan.api.output import ConanOutput
         self_str = str(self)
         if self_str != self_str.lower():
-            if not allow_uppercase:
-                raise ConanException(f"Conan packages names '{self_str}' must be all lowercase")
-            else:
+            if allow_uppercase:
                 ConanOutput().warning(f"Package name '{self_str}' has uppercase, and has been "
                                       "allowed by temporary config. This will break in later 2.X")
+            else:
+                raise ConanException(f"Conan packages names '{self_str}' must be all lowercase")
         if len(self_str) > 200:
             raise ConanException(f"Package reference too long >200 {self_str}")
         if ":" in repr(self):
@@ -178,9 +178,7 @@ class RecipeReference:
                       fnmatch.fnmatchcase(self.repr_notime(), pattern))
         if no_user_channel:
             condition = condition and not self.user and not self.channel
-        if negate:
-            return not condition
-        return condition
+        return not condition if negate else condition
 
 
 def ref_matches(ref, pattern, is_consumer):

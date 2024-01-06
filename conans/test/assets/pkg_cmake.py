@@ -55,7 +55,11 @@ def pkg_cmake(name, version, requires=None, exe=False):
             def package_info(self):
                 self.cpp_info.libs = ["{name}"]
         """)
-    deps = "requires = " + ", ".join('"{}"'.format(r) for r in requires) if requires else ""
+    deps = (
+        "requires = " + ", ".join(f'"{r}"' for r in requires)
+        if requires
+        else ""
+    )
     conanfile = conanfile.format(pkg_name=pkg_name, name=name, version=version, deps=deps)
 
     hdr = gen_function_h(name=name)
@@ -63,16 +67,25 @@ def pkg_cmake(name, version, requires=None, exe=False):
     src = gen_function_cpp(name=name, includes=deps, calls=deps)
 
     deps = [r.name for r in refs]
-    files = {"include/{}.h".format(name): hdr,
-             "src/{}.cpp".format(name): src,
-             "conanfile.py": conanfile}
+    files = {
+        f"include/{name}.h": hdr,
+        f"src/{name}.cpp": src,
+        "conanfile.py": conanfile,
+    }
     if exe:
         src_app = gen_function_cpp(name="main", includes=[name], calls=[name])
-        files["src/{}_app.cpp".format(name)] = src_app
-        cmake = gen_cmakelists(appname="{}_app".format(name), appsources=["src/{}_app.cpp".format(name)],
-                               libname=name, libsources=["src/{}.cpp".format(name)], find_package=deps)
+        files[f"src/{name}_app.cpp"] = src_app
+        cmake = gen_cmakelists(
+            appname=f"{name}_app",
+            appsources=[f"src/{name}_app.cpp"],
+            libname=name,
+            libsources=[f"src/{name}.cpp"],
+            find_package=deps,
+        )
     else:
-        cmake = gen_cmakelists(libname=name, libsources=["src/{}.cpp".format(name)], find_package=deps)
+        cmake = gen_cmakelists(
+            libname=name, libsources=[f"src/{name}.cpp"], find_package=deps
+        )
     files["CMakeLists.txt"] = cmake
     return files
 
@@ -143,14 +156,22 @@ def pkg_cmake_app(name, version, requires=None):
                 copy(self, "*/app.exe", self.build_folder, join(self.package_folder, "bin"), keep_path=False)
                 copy(self, "*app", self.build_folder, join(self.package_folder, "bin"), keep_path=False)
         """)
-    deps = "requires = " + ", ".join('"{}"'.format(r) for r in requires) if requires else ""
+    deps = (
+        "requires = " + ", ".join(f'"{r}"' for r in requires)
+        if requires
+        else ""
+    )
     conanfile = conanfile.format(pkg_name=pkg_name, name=name, version=version, deps=deps)
 
     deps = [r.name.replace(".", "_") for r in refs]
     src = gen_function_cpp(name="main", includes=deps, calls=deps)
     deps = [r.name for r in refs]
-    cmake = gen_cmakelists(appname=name, appsources=["src/{}.cpp".format(name)], find_package=deps)
+    cmake = gen_cmakelists(
+        appname=name, appsources=[f"src/{name}.cpp"], find_package=deps
+    )
 
-    return {"src/{}.cpp".format(name): src,
-            "CMakeLists.txt": cmake,
-            "conanfile.py": conanfile}
+    return {
+        f"src/{name}.cpp": src,
+        "CMakeLists.txt": cmake,
+        "conanfile.py": conanfile,
+    }

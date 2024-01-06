@@ -75,14 +75,15 @@ class GraphAPI:
                                          tested_python_requires=tested_python_requires,
                                          update=update)
         initialize_conanfile_profile(conanfile, profile_build, profile_host, CONTEXT_HOST, False)
-        conanfile.display_name = "%s (test package)" % str(tested_reference)
+        conanfile.display_name = f"{str(tested_reference)} (test package)"
         conanfile.output.scope = conanfile.display_name
         conanfile.tested_reference_str = repr(tested_reference)
 
         ref = RecipeReference(conanfile.name, conanfile.version, tested_reference.user,
                               tested_reference.channel)
-        root_node = Node(ref, conanfile, recipe=RECIPE_CONSUMER, context=CONTEXT_HOST, path=path)
-        return root_node
+        return Node(
+            ref, conanfile, recipe=RECIPE_CONSUMER, context=CONTEXT_HOST, path=path
+        )
 
     def _load_root_virtual_conanfile(self, profile_host, profile_build, requires, tool_requires,
                                      lockfile, remotes, update, check_updates=False, python_requires=None):
@@ -96,8 +97,12 @@ class GraphAPI:
                                             update=update, check_updates=check_updates)
 
         consumer_definer(conanfile, profile_host, profile_build)
-        root_node = Node(ref=None, conanfile=conanfile, context=CONTEXT_HOST, recipe=RECIPE_VIRTUAL)
-        return root_node
+        return Node(
+            ref=None,
+            conanfile=conanfile,
+            context=CONTEXT_HOST,
+            recipe=RECIPE_VIRTUAL,
+        )
 
     @staticmethod
     def _scope_options(profile, requires, tool_requires):
@@ -115,7 +120,7 @@ class GraphAPI:
     def load_graph_requires(self, requires, tool_requires, profile_host, profile_build,
                             lockfile, remotes, update, check_updates=False, python_requires=None):
         requires = [RecipeReference.loads(r) if isinstance(r, str) else r for r in requires] \
-            if requires else None
+                if requires else None
         tool_requires = [RecipeReference.loads(r) if isinstance(r, str) else r
                          for r in tool_requires] if tool_requires else None
 
@@ -127,14 +132,15 @@ class GraphAPI:
                                                       update=update,
                                                       python_requires=python_requires)
 
-        # check_updates = args.check_updates if "check_updates" in args else False
-        deps_graph = self.load_graph(root_node, profile_host=profile_host,
-                                     profile_build=profile_build,
-                                     lockfile=lockfile,
-                                     remotes=remotes,
-                                     update=update,
-                                     check_update=check_updates)
-        return deps_graph
+        return self.load_graph(
+            root_node,
+            profile_host=profile_host,
+            profile_build=profile_build,
+            lockfile=lockfile,
+            remotes=remotes,
+            update=update,
+            check_update=check_updates,
+        )
 
     def load_graph_consumer(self, path, name, version, user, channel,
                             profile_host, profile_build, lockfile, remotes, update,
@@ -145,10 +151,15 @@ class GraphAPI:
                                                        remotes=remotes, update=update,
                                                        is_build_require=is_build_require)
 
-        deps_graph = self.load_graph(root_node, profile_host=profile_host,
-                                     profile_build=profile_build, lockfile=lockfile,
-                                     remotes=remotes, update=update, check_update=check_updates)
-        return deps_graph
+        return self.load_graph(
+            root_node,
+            profile_host=profile_host,
+            profile_build=profile_build,
+            lockfile=lockfile,
+            remotes=remotes,
+            update=update,
+            check_update=check_updates,
+        )
 
     def load_graph(self, root_node, profile_host, profile_build, lockfile=None, remotes=None,
                    update=False, check_update=False):
@@ -177,8 +188,7 @@ class GraphAPI:
         remotes = remotes or []
         builder = DepsGraphBuilder(app.proxy, app.loader, app.range_resolver, app.cache, remotes,
                                    update, check_update, self.conan_api.config.global_conf)
-        deps_graph = builder.load_graph(root_node, profile_host, profile_build, lockfile)
-        return deps_graph
+        return builder.load_graph(root_node, profile_host, profile_build, lockfile)
 
     def analyze_binaries(self, graph, build_mode=None, remotes=None, update=None, lockfile=None,
                          build_modes_test=None, tested_graph=None):

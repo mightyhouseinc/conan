@@ -61,7 +61,7 @@ class MSBuildIntelTestCase:
         self.assertIn("main __INTEL_COMPILER1910", self.t.out)
 
         vcvars = vcvars_command(version="15", architecture="x64")
-        dumpbind_cmd = '%s && dumpbin /dependents "%s"' % (vcvars, exe)
+        dumpbind_cmd = f'{vcvars} && dumpbin /dependents "{exe}"'
         self.t.run_command(dumpbind_cmd)
         self.assertIn("KERNEL32.dll", self.t.out)
 
@@ -69,7 +69,7 @@ class MSBuildIntelTestCase:
         os.unlink(os.path.join(self.t.current_folder, exe))
 
         cmd = vcvars + ' && msbuild "MyProject.sln" /p:Configuration=Release ' \
-                       '/p:Platform=x64 /p:PlatformToolset="Intel C++ Compiler 19.1"'
+                           '/p:Platform=x64 /p:PlatformToolset="Intel C++ Compiler 19.1"'
 
         self.t.run_command(cmd)
         self.assertIn("Visual Studio 2017", self.t.out)

@@ -10,8 +10,9 @@ def validate_conan_version(required_range):
     for conditions in version_range.condition_sets:
         conditions.prerelease = True
     if not version_range.contains(clientver, resolve_prerelease=None):
-        raise ConanException("Current Conan version ({}) does not satisfy "
-                             "the defined one ({}).".format(clientver, required_range))
+        raise ConanException(
+            f"Current Conan version ({clientver}) does not satisfy the defined one ({required_range})."
+        )
 
 
 def check_required_conan_version(global_conf):
@@ -25,6 +26,5 @@ def check_required_conan_version(global_conf):
         :param global_conf: the global configura
         :return: None
     """
-    required_range_new = global_conf.get("core:required_conan_version")
-    if required_range_new:
+    if required_range_new := global_conf.get("core:required_conan_version"):
         validate_conan_version(required_range_new)

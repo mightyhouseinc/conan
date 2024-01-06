@@ -48,9 +48,14 @@ class DepsGraphBuilder(object):
                 (require, node) = open_requires.popleft()
                 if require.override:
                     continue
-                new_node = self._expand_require(require, node, dep_graph, profile_host,
-                                                profile_build, graph_lock)
-                if new_node:
+                if new_node := self._expand_require(
+                    require,
+                    node,
+                    dep_graph,
+                    profile_host,
+                    profile_build,
+                    graph_lock,
+                ):
                     self._initialize_requires(new_node, dep_graph, graph_lock, profile_build,
                                               profile_host)
                     open_requires.extendleft((r, new_node)
@@ -87,17 +92,15 @@ class DepsGraphBuilder(object):
                                           prev_ref, base_previous, self._resolve_prereleases)
 
         if prev_node is None:
-            # new node, must be added and expanded (node -> new_node)
-            new_node = self._create_new_node(node, require, graph, profile_host, profile_build,
-                                             graph_lock)
-            return new_node
-        else:
-            # print("Closing a loop from ", node, "=>", prev_node)
-            # Keep previous "test" status only if current is also test
-            prev_node.test = prev_node.test and (node.test or require.test)
-            require.process_package_type(node, prev_node)
-            graph.add_edge(node, prev_node, require)
-            node.propagate_closing_loop(require, prev_node)
+            return self._create_new_node(
+                node, require, graph, profile_host, profile_build, graph_lock
+            )
+        # print("Closing a loop from ", node, "=>", prev_node)
+        # Keep previous "test" status only if current is also test
+        prev_node.test = prev_node.test and (node.test or require.test)
+        require.process_package_type(node, prev_node)
+        graph.add_edge(node, prev_node, require)
+        node.propagate_closing_loop(require, prev_node)
 
     @staticmethod
     def _conflicting_version(require, node,
@@ -222,8 +225,7 @@ class DepsGraphBuilder(object):
     def _resolved_system(node, require, profile_build, profile_host, resolve_prereleases):
         profile = profile_build if node.context == CONTEXT_BUILD else profile_host
         dep_type = "platform_tool_requires" if require.build else "platform_requires"
-        system_reqs = getattr(profile, dep_type)
-        if system_reqs:
+        if system_reqs := getattr(profile, dep_type):
             version_range = require.version_range
             for d in system_reqs:
                 if require.ref.name == d.name:
@@ -234,7 +236,7 @@ class DepsGraphBuilder(object):
                             return layout, ConanFile(str(d)), RECIPE_PLATFORM, None
                     elif require.ref.version == d.version:
                         if d.revision is None or require.ref.revision is None or \
-                                d.revision == require.ref.revision:
+                                    d.revision == require.ref.revision:
                             require.ref.revision = d.revision
                             layout = BasicLayout(require.ref, None)
                             return layout, ConanFile(str(d)), RECIPE_PLATFORM, None
@@ -251,12 +253,12 @@ class DepsGraphBuilder(object):
             if pattern.version != "*":  # we need to check versions
                 rrange = require.version_range
                 valid = rrange.contains(pattern.version, self._resolve_prereleases) if rrange else \
-                    require.ref.version == pattern.version
+                        require.ref.version == pattern.version
                 if not valid:
                     continue
-            if pattern.user != "*" and pattern.user != require.ref.user:
+            if pattern.user not in ["*", require.ref.user]:
                 continue
-            if pattern.channel != "*" and pattern.channel != require.ref.channel:
+            if pattern.channel not in ["*", require.ref.channel]:
                 continue
             original_require = repr(require.ref)
             if alternative_ref.version != "*":
@@ -335,13 +337,12 @@ class DepsGraphBuilder(object):
             if require.visible:
                 # Only visible requirements in the host context propagate options from downstream
                 down_options.update_options(node.conanfile.up_options)
+        elif require.visible:
+            down_options = node.conanfile.up_options
+        elif not require.build:  # for requires in "host", like test_requires, pass myoptions
+            down_options = node.conanfile.private_up_options
         else:
-            if require.visible:
-                down_options = node.conanfile.up_options
-            elif not require.build:  # for requires in "host", like test_requires, pass myoptions
-                down_options = node.conanfile.private_up_options
-            else:
-                down_options = Options(options_values=node.conanfile.default_build_options)
+            down_options = Options(options_values=node.conanfile.default_build_options)
 
         self._prepare_node(new_node, profile_host, profile_build, down_options)
         require.process_package_type(node, new_node)

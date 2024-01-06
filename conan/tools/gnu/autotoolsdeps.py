@@ -14,7 +14,7 @@ class AutotoolsDeps:
     def ordered_deps(self):
         if self._ordered_deps is None:
             deps = self._conanfile.dependencies.host.topological_sort
-            self._ordered_deps = [dep for dep in reversed(deps.values())]
+            self._ordered_deps = list(reversed(deps.values()))
         return self._ordered_deps
 
     def _get_cpp_info(self):
@@ -29,8 +29,13 @@ class AutotoolsDeps:
     def _rpaths_flags(self):
         flags = []
         for dep in self.ordered_deps:
-            flags.extend(["-Wl,-rpath -Wl,{}".format(libdir) for libdir in dep.cpp_info.libdirs
-                          if dep.options.get_safe("shared", False)])
+            flags.extend(
+                [
+                    f"-Wl,-rpath -Wl,{libdir}"
+                    for libdir in dep.cpp_info.libdirs
+                    if dep.options.get_safe("shared", False)
+                ]
+            )
         return flags
 
     @property

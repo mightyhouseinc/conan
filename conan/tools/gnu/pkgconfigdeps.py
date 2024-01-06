@@ -147,8 +147,7 @@ class _PCContentGenerator:
         elif custom_content:  # Legacy: custom content is string
             pc_variable_pattern = re.compile("^(.*)=(.*)")
             for line in custom_content.splitlines():
-                match = pc_variable_pattern.match(line)
-                if match:
+                if match := pc_variable_pattern.match(line):
                     key, value = match.group(1).strip(), match.group(2).strip()
                     pc_variables[key] = value
         return pc_variables
@@ -156,7 +155,7 @@ class _PCContentGenerator:
     def _get_lib_flags(self, libdirvars, cpp_info):
         gnudeps_flags = GnuDepsFlags(self._conanfile, cpp_info)
         libdirsflags = ['-L"${%s}"' % d for d in libdirvars]
-        system_libs = ["-l%s" % l for l in (cpp_info.libs + cpp_info.system_libs)]
+        system_libs = [f"-l{l}" for l in (cpp_info.libs + cpp_info.system_libs)]
         shared_flags = cpp_info.sharedlinkflags + cpp_info.exelinkflags
         framework_flags = gnudeps_flags.frameworks + gnudeps_flags.framework_paths
         return " ".join(libdirsflags + system_libs + shared_flags + framework_flags)
@@ -290,7 +289,7 @@ class _PCGenerator:
             # e.g., requires = "other_pkg/1.0"
             requires = [_get_package_name(req, self._build_context_suffix)
                         for req in self._transitive_reqs.values()]
-        description = "Conan package: %s" % pkg_name
+        description = f"Conan package: {pkg_name}"
         aliases = _get_package_aliases(self._dep)
         cpp_info = self._dep.cpp_info
         return _PCInfo(pkg_name, requires, description, cpp_info, aliases)
@@ -372,9 +371,11 @@ class PkgConfigDeps:
         activated_br = {r.ref.name for r in build_req.values()
                         if r.ref.name in self.build_context_activated}
         common_names = {r.ref.name for r in host_req.values()}.intersection(activated_br)
-        without_suffixes = [common_name for common_name in common_names
-                            if self.build_context_suffix.get(common_name) is None]
-        if without_suffixes:
+        if without_suffixes := [
+            common_name
+            for common_name in common_names
+            if self.build_context_suffix.get(common_name) is None
+        ]:
             raise ConanException(f"The packages {without_suffixes} exist both as 'require' and as"
                                  f" 'build require'. You need to specify a suffix using the "
                                  f"'build_context_suffix' attribute at the PkgConfigDeps generator.")

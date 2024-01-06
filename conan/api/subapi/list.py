@@ -22,22 +22,20 @@ class ListAPI:
     def latest_recipe_revision(self, ref: RecipeReference, remote=None):
         assert ref.revision is None, "latest_recipe_revision: ref already have a revision"
         app = ConanApp(self.conan_api)
-        if remote:
-            ret = app.remote_manager.get_latest_recipe_reference(ref, remote=remote)
-        else:
-            ret = app.cache.get_latest_recipe_reference(ref)
-
-        return ret
+        return (
+            app.remote_manager.get_latest_recipe_reference(ref, remote=remote)
+            if remote
+            else app.cache.get_latest_recipe_reference(ref)
+        )
 
     def recipe_revisions(self, ref: RecipeReference, remote=None):
         assert ref.revision is None, "recipe_revisions: ref already have a revision"
         app = ConanApp(self.conan_api)
-        if remote:
-            results = app.remote_manager.get_recipe_revisions_references(ref, remote=remote)
-        else:
-            results = app.cache.get_recipe_revisions_references(ref)
-
-        return results
+        return (
+            app.remote_manager.get_recipe_revisions_references(ref, remote=remote)
+            if remote
+            else app.cache.get_recipe_revisions_references(ref)
+        )
 
     def latest_package_revision(self, pref: PkgReference, remote=None):
         # TODO: This returns None if the given package_id is not existing. It should probably
@@ -46,37 +44,40 @@ class ListAPI:
         assert pref.revision is None, "latest_package_revision: ref already have a revision"
         assert pref.package_id is not None, "package_id must be defined"
         app = ConanApp(self.conan_api)
-        if remote:
-            ret = app.remote_manager.get_latest_package_reference(pref, remote=remote)
-        else:
-            ret = app.cache.get_latest_package_reference(pref)
-        return ret
+        return (
+            app.remote_manager.get_latest_package_reference(pref, remote=remote)
+            if remote
+            else app.cache.get_latest_package_reference(pref)
+        )
 
     def package_revisions(self, pref: PkgReference, remote=None):
         assert pref.ref.revision is not None, "package_revisions requires a recipe revision, " \
-                                              "check latest first if needed"
+                                                  "check latest first if needed"
         app = ConanApp(self.conan_api)
-        if remote:
-            results = app.remote_manager.get_package_revisions_references(pref, remote=remote)
-        else:
-            results = app.cache.get_package_revisions_references(pref, only_latest_prev=False)
-        return results
+        return (
+            app.remote_manager.get_package_revisions_references(
+                pref, remote=remote
+            )
+            if remote
+            else app.cache.get_package_revisions_references(
+                pref, only_latest_prev=False
+            )
+        )
 
     def packages_configurations(self, ref: RecipeReference,
                                 remote=None) -> Dict[PkgReference, dict]:
         assert ref.revision is not None, "packages: ref should have a revision. " \
-                                         "Check latest if needed."
+                                             "Check latest if needed."
         if not remote:
             app = ConanApp(self.conan_api)
             prefs = app.cache.get_package_references(ref)
-            packages = get_cache_packages_binary_info(app.cache, prefs)
+            return get_cache_packages_binary_info(app.cache, prefs)
         else:
             app = ConanApp(self.conan_api)
             if ref.revision == "latest":
                 ref.revision = None
                 ref = app.remote_manager.get_latest_recipe_reference(ref, remote=remote)
-            packages = app.remote_manager.search_packages(remote, ref)
-        return packages
+            return app.remote_manager.search_packages(remote, ref)
 
     @staticmethod
     def filter_packages_configurations(pkg_configurations, query):
@@ -116,7 +117,7 @@ class ListAPI:
             return select_bundle
 
         def msg_format(msg, item, total):
-            return msg + f" ({total.index(item)}/{len(total)})"
+            return f"{msg} ({total.index(item)}/{len(total)})"
 
         trefs = TimedOutput(5, msg_format=msg_format)
         for r in refs:  # Older versions first
@@ -183,7 +184,7 @@ class ListAPI:
         conaninfo = load_binary_info(conaninfo.dumps())
         # Collect all configurations
         candidates = []
-        ConanOutput().info(f"Finding binaries in the cache")
+        ConanOutput().info("Finding binaries in the cache")
         pkg_configurations = self.packages_configurations(ref)
         candidates.extend(_BinaryDistance(pref, data, conaninfo)
                           for pref, data in pkg_configurations.items())
@@ -193,7 +194,6 @@ class ListAPI:
                 ConanOutput().info(f"Finding binaries in remote {remote.name}")
                 pkg_configurations = self.packages_configurations(ref, remote=remote)
             except Exception as e:
-                pass
                 ConanOutput(f"ERROR IN REMOTE {remote.name}: {e}")
             else:
                 candidates.extend(_BinaryDistance(pref, data, conaninfo, remote)

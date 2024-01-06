@@ -28,7 +28,7 @@ class Git:
             # We tried to use self.conanfile.run(), but it didn't work:
             #  - when using win_bash, crashing because access to .settings (forbidden in source())
             #  - the ``conan source`` command, not passing profiles, buildenv not injected
-            return check_output_runner("git {}".format(cmd)).strip()
+            return check_output_runner(f"git {cmd}").strip()
 
     def get_commit(self, repository=False):
         """
@@ -44,10 +44,9 @@ class Git:
             # https://github.com/conan-io/conan/issues/10971
             # https://git-scm.com/docs/git-rev-list#Documentation/git-rev-list.txt-Defaultmode
             path = '' if repository else '-- "."'
-            commit = self.run(f'rev-list HEAD -n 1 --full-history {path}')
-            return commit
+            return self.run(f'rev-list HEAD -n 1 --full-history {path}')
         except Exception as e:
-            raise ConanException("Unable to get git commit in '%s': %s" % (self.folder, str(e)))
+            raise ConanException(f"Unable to get git commit in '{self.folder}': {str(e)}")
 
     def get_remote_url(self, remote="origin"):
         """
@@ -86,15 +85,17 @@ class Git:
         # Potentially do two checks here.  If the clone is a shallow clone, then we won't be
         # able to find the commit.
         try:
-            branches = self.run("branch -r --contains {}".format(commit))
-            if "{}/".format(remote) in branches:
+            branches = self.run(f"branch -r --contains {commit}")
+            if f"{remote}/" in branches:
                 return True
         except Exception as e:
-            raise ConanException("Unable to check remote commit in '%s': %s" % (self.folder, str(e)))
+            raise ConanException(
+                f"Unable to check remote commit in '{self.folder}': {str(e)}"
+            )
 
         try:
             # This will raise if commit not present.
-            self.run("fetch {} --dry-run --depth=1 {}".format(remote, commit))
+            self.run(f"fetch {remote} --dry-run --depth=1 {commit}")
             return True
         except Exception as e:
             # Don't raise an error because the fetch could fail for many more reasons than the branch.
@@ -138,14 +139,13 @@ class Git:
                      the commit of the repository instead.
         :return: (url, commit) tuple
         """
-        dirty = self.is_dirty()
-        if dirty:
-            raise ConanException("Repo is dirty, cannot capture url and commit: "
-                                 "{}".format(self.folder))
+        if dirty := self.is_dirty():
+            raise ConanException(
+                f"Repo is dirty, cannot capture url and commit: {self.folder}"
+            )
         commit = self.get_commit(repository=repository)
         url = self.get_remote_url(remote=remote)
-        in_remote = self.commit_in_remote(commit, remote=remote)
-        if in_remote:
+        if in_remote := self.commit_in_remote(commit, remote=remote):
             return url, commit
         # TODO: Once we know how to pass [conf] to export, enable this
         # conf_name = "tools.scm:local"
@@ -154,9 +154,9 @@ class Git:
         #    raise ConanException("Current commit {} doesn't exist in remote {}\n"
         #                         "use '-c {}=1' to allow it".format(commit, remote, conf_name))
 
-        self._conanfile.output.warning("Current commit {} doesn't exist in remote {}\n"
-                                       "This revision will not be buildable in other "
-                                       "computer".format(commit, remote))
+        self._conanfile.output.warning(
+            f"Current commit {commit} doesn't exist in remote {remote}\nThis revision will not be buildable in other computer"
+        )
         return self.get_repo_root(), commit
 
     def get_repo_root(self):
@@ -182,7 +182,7 @@ class Git:
         mkdir(self.folder)
         self._conanfile.output.info("Cloning git repo")
         target_path = f'"{target}"' if target else ""  # quote in case there are spaces in path
-        self.run('clone "{}" {} {}'.format(url, " ".join(args), target_path))
+        self.run(f'clone "{url}" {" ".join(args)} {target_path}')
 
     def fetch_commit(self, url, commit):
         """
@@ -203,8 +203,8 @@ class Git:
 
         :param commit: Commit to checkout.
         """
-        self._conanfile.output.info("Checkout: {}".format(commit))
-        self.run('checkout {}'.format(commit))
+        self._conanfile.output.info(f"Checkout: {commit}")
+        self.run(f'checkout {commit}')
 
     def included_files(self):
         """

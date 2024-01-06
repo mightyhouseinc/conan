@@ -85,8 +85,9 @@ def test_apple_meson_toolchain_cross_compiling(arch, os_, os_version, os_sdk):
     profile = profile.format(
         os=os_,
         os_version=f"os.version={os_version}" if os_version else "",
-        os_sdk="os.sdk = " + os_sdk if os_sdk else "",
-        arch=arch)
+        os_sdk=f"os.sdk = {os_sdk}" if os_sdk else "",
+        arch=arch,
+    )
 
     t = TestClient()
     t.save({"conanfile.py": _conanfile_py,
@@ -109,11 +110,11 @@ def test_apple_meson_toolchain_cross_compiling(arch, os_, os_version, os_sdk):
     xcrun = XCRun(conanfile, os_sdk)
     lipo = xcrun.find('lipo')
 
-    t.run_command('"%s" -info "%s"' % (lipo, libhello))
-    assert "architecture: %s" % _to_apple_arch(arch) in t.out
+    t.run_command(f'"{lipo}" -info "{libhello}"')
+    assert f"architecture: {_to_apple_arch(arch)}" in t.out
 
-    t.run_command('"%s" -info "%s"' % (lipo, demo))
-    assert "architecture: %s" % _to_apple_arch(arch) in t.out
+    t.run_command(f'"{lipo}" -info "{demo}"')
+    assert f"architecture: {_to_apple_arch(arch)}" in t.out
 
     # only check for iOS because one of the macos build variants is usually native
     if os_ == "iOS":
@@ -122,8 +123,6 @@ def test_apple_meson_toolchain_cross_compiling(arch, os_, os_version, os_sdk):
 
 
 @pytest.mark.tool("meson")
-# for Linux, build for x86 will require a multilib compiler
-# for macOS, build for x86 is no longer supported by modern Xcode
 @pytest.mark.skipif(platform.system() != "Windows", reason="requires Windows")
 def test_windows_cross_compiling_x86():
     meson_build = textwrap.dedent("""
@@ -143,7 +142,7 @@ def test_windows_cross_compiling_x86():
                  "main.cpp": main_cpp,
                  "x86": profile_x86})
     profile_str = "--profile:build=default --profile:host=x86"
-    client.run("build . %s" % profile_str)
+    client.run(f"build . {profile_str}")
     client.run_command(os.path.join("build", "demo"))
     assert "main _M_IX86 defined" in client.out
     assert "main _MSC_VER19" in client.out
@@ -191,8 +190,11 @@ def test_android_meson_toolchain_cross_compiling(arch, expected_arch):
     client.run("build .")
     content = client.load(os.path.join("conan_meson_cross.ini"))
     assert "needs_exe_wrapper = true" in content
-    assert "Target machine cpu family: {}".format(expected_arch if expected_arch != "i386" else "x86") in client.out
-    assert "Target machine cpu: {}".format(arch) in client.out
+    assert (
+        f'Target machine cpu family: {expected_arch if expected_arch != "i386" else "x86"}'
+        in client.out
+    )
+    assert f"Target machine cpu: {arch}" in client.out
     libhello_name = "libhello.a" if platform.system() != "Windows" else "libhello.lib"
     libhello = os.path.join(client.current_folder, "build", libhello_name)
     demo = os.path.join(client.current_folder, "build", "demo")
@@ -201,5 +203,5 @@ def test_android_meson_toolchain_cross_compiling(arch, expected_arch):
 
     # Check binaries architecture
     if platform.system() == "Darwin":
-        client.run_command('objdump -f "%s"' % libhello)
-        assert "architecture: %s" % expected_arch in client.out
+        client.run_command(f'objdump -f "{libhello}"')
+        assert f"architecture: {expected_arch}" in client.out

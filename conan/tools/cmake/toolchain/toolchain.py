@@ -167,15 +167,13 @@ class CMakeToolchain(object):
         self.preprocessor_definitions.quote_preprocessor_strings()
 
         blocks = self.blocks.process_blocks()
-        ctxt_toolchain = {
+        return {
             "variables": self.variables,
             "variables_config": self.variables.configuration_types,
             "preprocessor_definitions": self.preprocessor_definitions,
             "preprocessor_definitions_config": self.preprocessor_definitions.configuration_types,
-            "conan_blocks": blocks
+            "conan_blocks": blocks,
         }
-
-        return ctxt_toolchain
 
     @property
     def content(self):
@@ -206,7 +204,7 @@ class CMakeToolchain(object):
             if isinstance(value, bool):
                 cache_variables[name] = "ON" if value else "OFF"
             elif isinstance(value, _PackageOption):
-                if str(value).lower() in ["true", "false", "none"]:
+                if str(value).lower() in {"true", "false", "none"}:
                     cache_variables[name] = "ON" if bool(value) else "OFF"
                 elif str(value).isdigit():
                     cache_variables[name] = int(value)
@@ -223,10 +221,8 @@ class CMakeToolchain(object):
             build_env = VirtualBuildEnv(self._conanfile, auto_generate=True).vars()
             run_env = VirtualRunEnv(self._conanfile, auto_generate=True).vars()
 
-            buildenv = {name: value for name, value in
-                        build_env.items(variable_reference="$penv{{{name}}}")}
-            runenv = {name: value for name, value in
-                      run_env.items(variable_reference="$penv{{{name}}}")}
+            buildenv = dict(build_env.items(variable_reference="$penv{{{name}}}"))
+            runenv = dict(run_env.items(variable_reference="$penv{{{name}}}"))
 
         write_cmake_presets(self._conanfile, toolchain, self.generator, cache_variables,
                             self.user_presets_path, self.presets_prefix, buildenv, runenv)
@@ -235,9 +231,9 @@ class CMakeToolchain(object):
         # Returns the name of the generator to be used by CMake
         conanfile = self._conanfile
 
-        # Downstream consumer always higher priority
-        generator_conf = conanfile.conf.get("tools.cmake.cmaketoolchain:generator")
-        if generator_conf:
+        if generator_conf := conanfile.conf.get(
+            "tools.cmake.cmaketoolchain:generator"
+        ):
             return generator_conf
 
         # second priority: the recipe one:
@@ -248,23 +244,20 @@ class CMakeToolchain(object):
         compiler = conanfile.settings.get_safe("compiler")
         compiler_version = conanfile.settings.get_safe("compiler.version")
 
-        cmake_years = {'8': '8 2005',
-                       '9': '9 2008',
-                       '10': '10 2010',
-                       '11': '11 2012',
-                       '12': '12 2013',
-                       '14': '14 2015',
-                       '15': '15 2017',
-                       '16': '16 2019',
-                       '17': '17 2022'}
-
         if compiler == "msvc":
             if compiler_version is None:
                 raise ConanException("compiler.version must be defined")
             vs_version = vs_ide_version(self._conanfile)
-            return "Visual Studio %s" % cmake_years[vs_version]
+            cmake_years = {'8': '8 2005',
+                           '9': '9 2008',
+                           '10': '10 2010',
+                           '11': '11 2012',
+                           '12': '12 2013',
+                           '14': '14 2015',
+                           '15': '15 2017',
+                           '16': '16 2019',
+                           '17': '17 2022'}
 
-        if use_win_mingw(conanfile):
-            return "MinGW Makefiles"
+            return f"Visual Studio {cmake_years[vs_version]}"
 
-        return "Unix Makefiles"
+        return "MinGW Makefiles" if use_win_mingw(conanfile) else "Unix Makefiles"

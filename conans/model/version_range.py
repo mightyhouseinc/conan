@@ -12,7 +12,7 @@ class _Condition:
         self.display_version = version
 
         value = str(version)
-        if (operator == ">=" or operator == "<") and "-" not in value:
+        if operator in [">=", "<"] and "-" not in value:
             value += "-"
         self.version = Version(value)
 
@@ -31,29 +31,17 @@ class _Condition:
             return True
         elif self.version == other.version:
             if self.operator == "<":
-                if other.operator == "<":
-                    return self.display_version.pre is not None
-                else:
-                    return True
+                return self.display_version.pre is not None if other.operator == "<" else True
             elif self.operator == "<=":
-                if other.operator == "<":
-                    return False
-                else:
-                    return self.display_version.pre is None
+                return False if other.operator == "<" else self.display_version.pre is None
             elif self.operator == ">":
-                if other.operator == ">":
-                    return self.display_version.pre is None
-                else:
-                    return False
+                return self.display_version.pre is None if other.operator == ">" else False
             else:
-                if other.operator == ">":
-                    return True
-                # There's a possibility of getting here while validating if a range is non-void
-                # by comparing >= & <= for lower limit <= upper limit
-                elif other.operator == "<=":
-                    return True
-                else:
-                    return self.display_version.pre is not None
+                return (
+                    True
+                    if other.operator in [">", "<="]
+                    else self.display_version.pre is not None
+                )
         return False
 
     def __eq__(self, other):
@@ -112,31 +100,39 @@ class _ConditionSet:
             return [_Condition(operator, Version(version))]
 
     def _valid(self, version, conf_resolve_prepreleases):
-        if version.pre:
             # Follow the expression desires only if core.version_ranges:resolve_prereleases is None,
             # else force to the conf's value
-            if conf_resolve_prepreleases is None:
-                if not self.prerelease:
-                    return False
-            elif conf_resolve_prepreleases is False:
+        if (
+            conf_resolve_prepreleases is None
+            and not self.prerelease
+            or conf_resolve_prepreleases is not None
+            and conf_resolve_prepreleases is False
+        ):
+            if version.pre:
                 return False
-        for condition in self.conditions:
-            if condition.operator == ">":
-                if not version > condition.version:
-                    return False
-            elif condition.operator == "<":
-                if not version < condition.version:
-                    return False
-            elif condition.operator == ">=":
-                if not version >= condition.version:
-                    return False
-            elif condition.operator == "<=":
-                if not version <= condition.version:
-                    return False
-            elif condition.operator == "=":
-                if not version == condition.version:
-                    return False
-        return True
+        return not any(
+            condition.operator == "<"
+            and not version < condition.version
+            or condition.operator != "<"
+            and condition.operator == "<="
+            and not version <= condition.version
+            or condition.operator != "<"
+            and condition.operator != "<="
+            and condition.operator == "="
+            and version != condition.version
+            or condition.operator != "<"
+            and condition.operator != "<="
+            and condition.operator != "="
+            and condition.operator == ">"
+            and not version > condition.version
+            or condition.operator != "<"
+            and condition.operator != "<="
+            and condition.operator != "="
+            and condition.operator != ">"
+            and condition.operator == ">="
+            and not version >= condition.version
+            for condition in self.conditions
+        )
 
 
 class VersionRange:
@@ -155,15 +151,16 @@ class VersionRange:
                 break
             else:
                 t = t.strip()
-                if len(t) > 0 and t[0].isalpha():
-                    from conan.api.output import ConanOutput
-                    ConanOutput().warning(f'Unrecognized version range option "{t}" in "{expression}"')
-                else:
+                if len(t) <= 0 or not t[0].isalpha():
                     raise ConanException(f'"{t}" in version range "{expression}" is not a valid option')
+                from conan.api.output import ConanOutput
+                ConanOutput().warning(f'Unrecognized version range option "{t}" in "{expression}"')
         version_expr = tokens[0]
         self.condition_sets = []
-        for alternative in version_expr.split("||"):
-            self.condition_sets.append(_ConditionSet(alternative, prereleases))
+        self.condition_sets.extend(
+            _ConditionSet(alternative, prereleases)
+            for alternative in version_expr.split("||")
+        )
 
     def __str__(self):
         return self._expression
@@ -179,10 +176,10 @@ class VersionRange:
         :return: Whether the version is inside the range
         """
         assert isinstance(version, Version), type(version)
-        for condition_set in self.condition_sets:
-            if condition_set._valid(version, resolve_prerelease):
-                return True
-        return False
+        return any(
+            condition_set._valid(version, resolve_prerelease)
+            for condition_set in self.condition_sets
+        )
 
     def intersection(self, other):
         conditions = []

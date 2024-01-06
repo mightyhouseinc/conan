@@ -39,8 +39,7 @@ class NewAPI:
                          "autotools_lib": autotools_lib_files,
                          "autotools_exe": autotools_exe_files,
                          "alias": alias_file}
-        template_files = new_templates.get(template_name)
-        return template_files
+        return new_templates.get(template_name)
 
     def get_template(self, template_folder):
         """ Load a template from a user absolute folder
@@ -102,7 +101,7 @@ class NewAPI:
         def as_name(ref):
             ref = as_package_name(ref)
             if '/' in ref:
-                ref = ref[0:ref.index('/')]
+                ref = ref[:ref.index('/')]
             return ref
 
         definitions["package_name"] = as_package_name(name)

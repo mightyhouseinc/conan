@@ -14,7 +14,7 @@ class RestRoutes(object):
 
     @property
     def recipe_latest(self):
-        return '%s/latest' % self.recipe
+        return f'{self.recipe}/latest'
 
     @property
     def recipe_revision(self):
@@ -22,11 +22,11 @@ class RestRoutes(object):
 
     @property
     def recipe_revision_files(self):
-        return '%s/files' % self.recipe_revision
+        return f'{self.recipe_revision}/files'
 
     @property
     def recipe_revisions(self):
-        return '%s/revisions' % self.recipe
+        return f'{self.recipe}/revisions'
 
     @property
     def recipe_revision_file(self):
@@ -34,11 +34,11 @@ class RestRoutes(object):
 
     @property
     def packages(self):
-        return '%s/packages' % self.recipe
+        return f'{self.recipe}/packages'
 
     @property
     def packages_revision(self):
-        return '%s/packages' % self.recipe_revision
+        return f'{self.recipe_revision}/packages'
 
     @property
     def package(self):
@@ -46,7 +46,7 @@ class RestRoutes(object):
 
     @property
     def package_files(self):
-        return '%s/files' % self.package
+        return f'{self.package}/files'
 
     @property
     def package_recipe_revision(self):
@@ -55,7 +55,7 @@ class RestRoutes(object):
 
     @property
     def package_revisions(self):
-        return '%s/revisions' % self.package_recipe_revision
+        return f'{self.package_recipe_revision}/revisions'
 
     @property
     def package_revision(self):
@@ -63,11 +63,11 @@ class RestRoutes(object):
 
     @property
     def package_revision_files(self):
-        return '%s/files' % self.package_revision
+        return f'{self.package_revision}/files'
 
     @property
     def package_revision_latest(self):
-        return '%s/latest' % self.package_recipe_revision
+        return f'{self.package_recipe_revision}/latest'
 
     @property
     def package_revision_file(self):
@@ -75,8 +75,8 @@ class RestRoutes(object):
 
     @property
     def common_search_packages(self):
-        return "%s/search" % self.recipe
+        return f"{self.recipe}/search"
 
     @property
     def common_search_packages_revision(self):
-        return "%s/search" % self.recipe_revision
+        return f"{self.recipe_revision}/search"

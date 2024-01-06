@@ -14,9 +14,9 @@ class ConfigVersionTemplate(CMakeDepsFileTemplate):
     @property
     def filename(self):
         if self.file_name == self.file_name.lower():
-            return "{}-config-version.cmake".format(self.file_name)
+            return f"{self.file_name}-config-version.cmake"
         else:
-            return "{}ConfigVersion.cmake".format(self.file_name)
+            return f"{self.file_name}ConfigVersion.cmake"
 
     @property
     def context(self):
@@ -32,10 +32,8 @@ class ConfigVersionTemplate(CMakeDepsFileTemplate):
 
     @property
     def template(self):
-        # https://gitlab.kitware.com/cmake/cmake/blob/master/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
-        # This will be at XXX-config-version.cmake
-        # AnyNewerVersion|SameMajorVersion|SameMinorVersion|ExactVersion
-        ret = textwrap.dedent("""\
+        return textwrap.dedent(
+            """\
             set(PACKAGE_VERSION "{{ version }}")
 
             if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
@@ -92,5 +90,5 @@ class ConfigVersionTemplate(CMakeDepsFileTemplate):
                     set(PACKAGE_VERSION_EXACT TRUE)
                 endif()
             endif()
-            """)
-        return ret
+            """
+        )

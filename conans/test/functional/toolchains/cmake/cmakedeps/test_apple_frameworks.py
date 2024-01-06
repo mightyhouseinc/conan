@@ -256,7 +256,7 @@ def test_apple_own_framework_cross_build(settings):
     #  - Have users 2 test_packages, one for the host and other for the build, with some naming
     #    convention. CI launches one after the other if found
     client.run("create . %s -tf=\"\" --build-require" % settings)
-    client.run("create . %s" % settings)
+    client.run(f"create . {settings}")
     if not len(settings):
         assert "Hello World Release!" in client.out
 
@@ -561,7 +561,7 @@ def test_iphoneos_crossbuild():
     client.run("install . --profile:build=default --profile:host=ios-armv8")
     client.run("build . --profile:build=default --profile:host=ios-armv8")
     main_path = "./main.app/main"
-    client.run_command("lipo -info {}".format(main_path))
+    client.run_command(f"lipo -info {main_path}")
     assert "Non-fat file" in client.out
     assert "is architecture: arm64" in client.out
     client.run_command(f"vtool -show-build {main_path}")

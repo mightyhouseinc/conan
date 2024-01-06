@@ -64,31 +64,30 @@ class ConanServiceV2:
         if not self._server_store.path_exists(root):
             raise RecipeNotFoundException(pref.ref)
 
-        ret = self._server_store.get_package_revisions_references(pref)
-        return ret
+        return self._server_store.get_package_revisions_references(pref)
 
     def get_latest_revision(self, ref, auth_user):
         self._authorizer.check_read_conan(auth_user, ref)
-        tmp = self._server_store.get_last_revision(ref)
-        if not tmp:
+        if tmp := self._server_store.get_last_revision(ref):
+            return tmp
+        else:
             raise RecipeNotFoundException(ref)
-        return tmp
 
     def get_latest_package_reference(self, pref, auth_user):
         self._authorizer.check_read_conan(auth_user, pref.ref)
-        _pref = self._server_store.get_last_package_revision(pref)
-        if not _pref:
+        if _pref := self._server_store.get_last_package_revision(pref):
+            return _pref
+        else:
             raise PackageNotFoundException(pref)
-        return _pref
 
     # PACKAGE METHODS
     def get_package_file_list(self, pref, auth_user):
         self._authorizer.check_read_conan(auth_user, pref.ref)
-        file_list = self._server_store.get_package_file_list(pref)
-        if not file_list:
+        if file_list := self._server_store.get_package_file_list(pref):
+            # Send speculative metadata (empty) for files (non breaking future changes)
+            return {"files": {key: {} for key in file_list}}
+        else:
             raise PackageNotFoundException(pref)
-        # Send speculative metadata (empty) for files (non breaking future changes)
-        return {"files": {key: {} for key in file_list}}
 
     def get_package_file(self, pref, filename, auth_user):
         self._authorizer.check_read_conan(auth_user, pref.ref)

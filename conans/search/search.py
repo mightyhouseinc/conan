@@ -30,7 +30,7 @@ def filter_packages(query, results: Dict[PkgReference, dict]):
                 result[pref] = data
         return result
     except Exception as exc:
-        raise ConanException("Invalid package query: %s. %s" % (query, exc))
+        raise ConanException(f"Invalid package query: {query}. {exc}")
 
 
 def _evaluate_postfix_with_info(postfix, binary_info):
@@ -62,9 +62,8 @@ def _evaluate(prop_name, prop_value, binary_info):
 
     if not prop_name.startswith("options."):
         return compatible_prop(info_settings.get(prop_name), prop_value)
-    else:
-        prop_name = prop_name[len("options."):]
-        return compatible_prop(info_options.get(prop_name), prop_value)
+    prop_name = prop_name[len("options."):]
+    return compatible_prop(info_options.get(prop_name), prop_value)
 
 
 def search_recipes(cache, pattern=None, ignorecase=True):

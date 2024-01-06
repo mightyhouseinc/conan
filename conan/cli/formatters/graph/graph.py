@@ -32,7 +32,7 @@ class _PrinterGraphItem(object):
     @property
     def short_label(self):
         if self._ref and self._ref.name:
-            return "{}/{}".format(self._ref.name, self._ref.version)
+            return f"{self._ref.name}/{self._ref.version}"
         else:
             return self.label
 
@@ -64,7 +64,7 @@ class _Grapher(object):
 
         _node_map = {}
         for i, node in enumerate(graph_nodes):
-            n = _PrinterGraphItem(i, node, bool(node in build_time_nodes))
+            n = _PrinterGraphItem(i, node, node in build_time_nodes)
             _node_map[node] = n
 
         edges = []
@@ -78,13 +78,14 @@ class _Grapher(object):
 
     @staticmethod
     def binary_color(node):
-        assert isinstance(node, _PrinterGraphItem), "Wrong type '{}'".format(type(node))
-        color = {BINARY_CACHE: "SkyBlue",
-                 BINARY_DOWNLOAD: "LightGreen",
-                 BINARY_BUILD: "Khaki",
-                 BINARY_MISSING: "OrangeRed",
-                 BINARY_UPDATE: "SeaGreen"}.get(node.binary, "White")
-        return color
+        assert isinstance(node, _PrinterGraphItem), f"Wrong type '{type(node)}'"
+        return {
+            BINARY_CACHE: "SkyBlue",
+            BINARY_DOWNLOAD: "LightGreen",
+            BINARY_BUILD: "Khaki",
+            BINARY_MISSING: "OrangeRed",
+            BINARY_UPDATE: "SeaGreen",
+        }.get(node.binary, "White")
 
 
 def _render_graph(graph, error, template, template_folder):

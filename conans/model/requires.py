@@ -142,10 +142,8 @@ class Requirement:
         return repr(self.__dict__)
 
     def __str__(self):
-        traits = 'build={}, headers={}, libs={}, '  \
-                 'run={}, visible={}'.format(self.build, self.headers, self.libs, self.run,
-                                             self.visible)
-        return "{}, Traits: {}".format(self.ref, traits)
+        traits = f'build={self.build}, headers={self.headers}, libs={self.libs}, run={self.run}, visible={self.visible}'
+        return f"{self.ref}, Traits: {traits}"
 
     def serialize(self):
         result = {"ref": str(self.ref)}
@@ -266,27 +264,39 @@ class Requirement:
             return
 
         if require.build:  # public!
-            # TODO: To discuss if this way of conflicting build_requires is actually useful or not
-            downstream_require = Requirement(require.ref, headers=False, libs=False, build=True,
-                                             run=False, visible=self.visible, direct=False)
-            return downstream_require
-
+            return Requirement(
+                require.ref,
+                headers=False,
+                libs=False,
+                build=True,
+                run=False,
+                visible=self.visible,
+                direct=False,
+            )
         if self.build:  # Build-requires
             # If the above is shared or the requirement is explicit run=True
             if dep_pkg_type is PackageType.SHARED or require.run:
-                downstream_require = Requirement(require.ref, headers=False, libs=False, build=True,
-                                                 run=True, visible=False, direct=False)
-                return downstream_require
+                return Requirement(
+                    require.ref,
+                    headers=False,
+                    libs=False,
+                    build=True,
+                    run=True,
+                    visible=False,
+                    direct=False,
+                )
             return
 
         # Regular and test requires
         if dep_pkg_type is PackageType.SHARED or dep_pkg_type is PackageType.STATIC:
-            if pkg_type is PackageType.SHARED:
+            if (
+                pkg_type is PackageType.SHARED
+                or pkg_type is not PackageType.STATIC
+                and pkg_type is PackageType.APP
+            ):
                 downstream_require = Requirement(require.ref, headers=False, libs=False, run=require.run)
             elif pkg_type is PackageType.STATIC:
                 downstream_require = Requirement(require.ref, headers=False, libs=require.libs, run=require.run)
-            elif pkg_type is PackageType.APP:
-                downstream_require = Requirement(require.ref, headers=False, libs=False, run=require.run)
             elif pkg_type is PackageType.HEADER:
                 downstream_require = Requirement(require.ref, headers=require.headers, libs=require.libs, run=require.run)
             else:
@@ -490,7 +500,7 @@ class Requirements:
         ref = RecipeReference.loads(str_ref)
         req = Requirement(ref, **kwargs)
         if self._requires.get(req):
-            raise ConanException("Duplicated requirement: {}".format(ref))
+            raise ConanException(f"Duplicated requirement: {ref}")
         self._requires[req] = req
 
     def build_require(self, ref, raise_if_duplicated=True, package_id_mode=None, visible=False,
@@ -513,7 +523,7 @@ class Requirements:
                           package_id_mode=package_id_mode, options=options, override=override)
 
         if raise_if_duplicated and self._requires.get(req):
-            raise ConanException("Duplicated requirement: {}".format(ref))
+            raise ConanException(f"Duplicated requirement: {ref}")
         self._requires[req] = req
 
     def override(self, ref):
@@ -521,10 +531,10 @@ class Requirements:
         old_requirement = self._requires.get(req)
         if old_requirement is not None:
             req.force = True
-            self._requires[req] = req
         else:
             req.override = True
-            self._requires[req] = req
+
+        self._requires[req] = req
 
     def test_require(self, ref, run=None, options=None, force=None):
         """
@@ -544,7 +554,7 @@ class Requirements:
         req = Requirement(ref, headers=True, libs=True, build=False, run=run, visible=False,
                           test=True, package_id_mode=None, options=options, force=force)
         if self._requires.get(req):
-            raise ConanException("Duplicated requirement: {}".format(ref))
+            raise ConanException(f"Duplicated requirement: {ref}")
         self._requires[req] = req
 
     def tool_require(self, ref, raise_if_duplicated=True, package_id_mode=None, visible=False,
@@ -564,7 +574,7 @@ class Requirements:
         req = Requirement(ref, headers=False, libs=False, build=True, run=run, visible=visible,
                           package_id_mode=package_id_mode, options=options, override=override)
         if raise_if_duplicated and self._requires.get(req):
-            raise ConanException("Duplicated requirement: {}".format(ref))
+            raise ConanException(f"Duplicated requirement: {ref}")
         self._requires[req] = req
 
     def __repr__(self):

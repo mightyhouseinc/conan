@@ -15,5 +15,4 @@ class JWTCredentialsManager(JWTManager):
         """Gets the user from credentials object. None if no credentials.
         Can raise jwt.ExpiredSignature and jwt.DecodeError"""
         profile = self.get_profile(token)
-        username = profile.get("user", None)
-        return username
+        return profile.get("user", None)

@@ -84,24 +84,24 @@ class AutotoolsToolchain:
                     raise ConanException("You must provide a valid SDK path for cross-compilation.")
                 apple_arch = to_apple_arch(self._conanfile)
                 # https://man.archlinux.org/man/clang.1.en#Target_Selection_Options
-                self.apple_arch_flag = "-arch {}".format(apple_arch) if apple_arch else None
+                self.apple_arch_flag = f"-arch {apple_arch}" if apple_arch else None
                 # -isysroot makes all includes for your library relative to the build directory
-                self.apple_isysroot_flag = "-isysroot {}".format(sdk_path) if sdk_path else None
+                self.apple_isysroot_flag = f"-isysroot {sdk_path}" if sdk_path else None
 
         sysroot = self._conanfile.conf.get("tools.build:sysroot")
         sysroot = sysroot.replace("\\", "/") if sysroot is not None else None
-        self.sysroot_flag = "--sysroot {}".format(sysroot) if sysroot else None
+        self.sysroot_flag = f"--sysroot {sysroot}" if sysroot else None
 
         self.configure_args = self._default_configure_shared_flags() + \
-                              self._default_configure_install_flags() + \
-                              self._get_triplets()
+                                  self._default_configure_install_flags() + \
+                                  self._get_triplets()
         self.autoreconf_args = self._default_autoreconf_flags()
         self.make_args = []
 
     def _get_msvc_runtime_flag(self):
         flag = msvc_runtime_flag(self._conanfile)
         if flag:
-            flag = "-{}".format(flag)
+            flag = f"-{flag}"
         return flag
 
     def _msvc_extra_flags(self):
@@ -148,7 +148,7 @@ class AutotoolsToolchain:
                                                    check_type=list))
         linker_scripts = self._conanfile.conf.get("tools.build:linker_scripts", default=[],
                                                   check_type=list)
-        conf_flags.extend(["-T'" + linker_script + "'" for linker_script in linker_scripts])
+        conf_flags.extend([f"-T'{linker_script}'" for linker_script in linker_scripts])
         ret = ret + self.build_type_link_flags + apple_flags + self.extra_ldflags + conf_flags
         return self._filter_list_empty_fields(ret)
 
@@ -160,9 +160,9 @@ class AutotoolsToolchain:
 
     def environment(self):
         env = Environment()
-        compilers_by_conf = self._conanfile.conf.get("tools.build:compiler_executables", default={},
-                                                     check_type=dict)
-        if compilers_by_conf:
+        if compilers_by_conf := self._conanfile.conf.get(
+            "tools.build:compiler_executables", default={}, check_type=dict
+        ):
             compilers_mapping = {"c": "CC", "cpp": "CXX", "cuda": "NVCC", "fortran": "FC"}
             for comp, env_var in compilers_mapping.items():
                 if comp in compilers_by_conf:
@@ -170,7 +170,7 @@ class AutotoolsToolchain:
                     # https://github.com/conan-io/conan/issues/13780
                     compiler = unix_path(self._conanfile, compiler)
                     env.define(env_var, compiler)
-        env.append("CPPFLAGS", ["-D{}".format(d) for d in self.defines])
+        env.append("CPPFLAGS", [f"-D{d}" for d in self.defines])
         env.append("CXXFLAGS", self.cxxflags)
         env.append("CFLAGS", self.cflags)
         env.append("LDFLAGS", self.ldflags)
@@ -223,12 +223,15 @@ class AutotoolsToolchain:
         return ["--force", "--install"]
 
     def _get_triplets(self):
-        triplets = []
-        for flag, value in (("--host=", self._host), ("--build=", self._build),
-                            ("--target=", self._target)):
-            if value:
-                triplets.append(f'{flag}{value}')
-        return triplets
+        return [
+            f'{flag}{value}'
+            for flag, value in (
+                ("--host=", self._host),
+                ("--build=", self._build),
+                ("--target=", self._target),
+            )
+            if value
+        ]
 
     def update_configure_args(self, updated_flags):
         """
@@ -265,10 +268,7 @@ class AutotoolsToolchain:
             for flag in flags:
                 # Only splitting if "=" is there
                 option = flag.split("=", 1)
-                if len(option) == 2:
-                    ret[option[0]] = option[1]
-                else:
-                    ret[option[0]] = ""
+                ret[option[0]] = option[1] if len(option) == 2 else ""
             return ret
 
         def _dict_to_list(flags):

@@ -69,11 +69,7 @@ def _get_gnu_triplet(os_, arch, compiler=None):
                              " https://github.com/conan-io/conan/issues" % arch)
 
     # Calculate the OS
-    if compiler == "gcc":
-        windows_op = "w64-mingw32"
-    else:
-        windows_op = "unknown-windows"
-
+    windows_op = "w64-mingw32" if compiler == "gcc" else "unknown-windows"
     op_system = {"Windows": windows_op,
                  "Linux": "linux-gnu",
                  "Darwin": "apple-darwin",
@@ -93,10 +89,10 @@ def _get_gnu_triplet(os_, arch, compiler=None):
         if "arm" in arch and "armv8" not in arch:
             op_system += "eabi"
 
-        if (arch == "armv5hf" or arch == "armv7hf") and os_ == "Linux":
+        if arch in ["armv5hf", "armv7hf"] and os_ == "Linux":
             op_system += "hf"
 
         if arch == "armv8_32" and os_ == "Linux":
             op_system += "_ilp32"  # https://wiki.linaro.org/Platform/arm64-ilp32
 
-    return "%s-%s" % (machine, op_system)
+    return f"{machine}-{op_system}"

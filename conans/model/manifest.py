@@ -18,7 +18,7 @@ class FileTreeManifest(object):
 
     @property
     def summary_hash(self):
-        s = ["%s: %s" % (f, fmd5) for f, fmd5 in sorted(self.file_sums.items())]
+        s = [f"{f}: {fmd5}" for f, fmd5 in sorted(self.file_sums.items())]
         s.append("")
         return md5("\n".join(s))
 
@@ -42,23 +42,25 @@ class FileTreeManifest(object):
 
     def __repr__(self):
         # Used for serialization and saving it to disk
-        ret = ["%s" % self.time]
-        for file_path, file_md5 in sorted(self.file_sums.items()):
-            ret.append("%s: %s" % (file_path, file_md5))
+        ret = [f"{self.time}"]
+        ret.extend(
+            f"{file_path}: {file_md5}"
+            for file_path, file_md5 in sorted(self.file_sums.items())
+        )
         ret.append("")
-        content = "\n".join(ret)
-        return content
+        return "\n".join(ret)
 
     def __str__(self):
         """  Used for displaying the manifest in user readable format in Uploader, when the server
         manifest is newer than the cache one (and not force)
         """
-        ret = ["Time: %s" % timestamp_to_str(self.time)]
-        for file_path, file_md5 in sorted(self.file_sums.items()):
-            ret.append("%s, MD5: %s" % (file_path, file_md5))
+        ret = [f"Time: {timestamp_to_str(self.time)}"]
+        ret.extend(
+            f"{file_path}, MD5: {file_md5}"
+            for file_path, file_md5 in sorted(self.file_sums.items())
+        )
         ret.append("")
-        content = "\n".join(ret)
-        return content
+        return "\n".join(ret)
 
     def save(self, folder, filename=CONAN_MANIFEST):
         path = os.path.join(folder, filename)
@@ -106,7 +108,7 @@ class FileTreeManifest(object):
             for name, filepath in export_files.items():
                 # For a symlink: md5 of the pointing path, no matter if broken, relative or absolute.
                 value = md5(os.readlink(filepath)) if os.path.islink(filepath) else md5sum(filepath)
-                file_dict["export_source/%s" % name] = value
+                file_dict[f"export_source/{name}"] = value
 
         date = timestamp_now()
 

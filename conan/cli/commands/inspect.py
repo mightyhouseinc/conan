@@ -14,7 +14,7 @@ def inspect_text_formatter(data):
             for k, v in value.items():
                 cli_out_write(f"    {k}: {v}")
         else:
-            cli_out_write("{}: {}".format(name, str(value)))
+            cli_out_write(f"{name}: {str(value)}")
 
 
 @conan_command(group="Consumer", formatters={"text": inspect_text_formatter,

@@ -67,9 +67,7 @@ class RemoteManager(object):
             self._cache.remove_recipe_layout(layout)
             raise
         export_folder = layout.export()
-        tgz_file = zipped_files.pop(EXPORT_TGZ_NAME, None)
-
-        if tgz_file:
+        if tgz_file := zipped_files.pop(EXPORT_TGZ_NAME, None):
             uncompress_file(tgz_file, export_folder, scope=str(ref))
         mkdir(export_folder)
         for file_name, file_path in zipped_files.items():  # copy CONANFILE
@@ -85,7 +83,7 @@ class RemoteManager(object):
         """
         assert ref.revision, "get_recipe without revision specified"
         output = ConanOutput(scope=str(ref))
-        output.info("Retrieving recipe metadata from remote '%s' " % remote.name)
+        output.info(f"Retrieving recipe metadata from remote '{remote.name}' ")
         layout = self._cache.recipe_layout(ref)
         download_export = layout.download_export()
         try:
@@ -111,7 +109,9 @@ class RemoteManager(object):
 
     def get_package(self, pref, remote, metadata=None):
         output = ConanOutput(scope=str(pref.ref))
-        output.info("Retrieving package %s from remote '%s' " % (pref.package_id, remote.name))
+        output.info(
+            f"Retrieving package {pref.package_id} from remote '{remote.name}' "
+        )
 
         assert pref.revision is not None
 
@@ -125,8 +125,9 @@ class RemoteManager(object):
         only download the metadata, not the packge itself
         """
         output = ConanOutput(scope=str(pref.ref))
-        output.info("Retrieving package metadata %s from remote '%s' "
-                    % (pref.package_id, remote.name))
+        output.info(
+            f"Retrieving package metadata {pref.package_id} from remote '{remote.name}' "
+        )
 
         assert pref.revision is not None
         pkg_layout = self._cache.pkg_layout(pref)
@@ -161,8 +162,8 @@ class RemoteManager(object):
             for file_name, file_path in zipped_files.items():  # copy CONANINFO and CONANMANIFEST
                 shutil.move(file_path, os.path.join(package_folder, file_name))
 
-            scoped_output.success('Package installed %s' % pref.package_id)
-            scoped_output.info("Downloaded package revision %s" % pref.revision)
+            scoped_output.success(f'Package installed {pref.package_id}')
+            scoped_output.info(f"Downloaded package revision {pref.revision}")
         except NotFoundException:
             raise PackageNotFoundException(pref)
         except BaseException as e:  # So KeyboardInterrupt also cleans things
@@ -212,12 +213,13 @@ class RemoteManager(object):
         headers = None
         if info:
             headers = {}
-            settings = [f'{k}={v}' for k, v in info.settings.items()]
-            if settings:
+            if settings := [f'{k}={v}' for k, v in info.settings.items()]:
                 headers['Conan-PkgID-Settings'] = ';'.join(settings)
-            options = [f'{k}={v}' for k, v in info.options.serialize().items()
-                       if k in ("shared", "fPIC", "header_only")]
-            if options:
+            if options := [
+                f'{k}={v}'
+                for k, v in info.options.serialize().items()
+                if k in ("shared", "fPIC", "header_only")
+            ]:
                 headers['Conan-PkgID-Options'] = ';'.join(options)
         return self._call_remote(remote, "get_latest_package_reference", pref, headers=headers)
 
@@ -233,7 +235,7 @@ class RemoteManager(object):
         assert (isinstance(remote, Remote))
         enforce_disabled = kwargs.pop("enforce_disabled", True)
         if remote.disabled and enforce_disabled:
-            raise ConanException("Remote '%s' is disabled" % remote.name)
+            raise ConanException(f"Remote '{remote.name}' is disabled")
         try:
             return self._auth_manager.call_rest_api_method(remote, method, *args, **kwargs)
         except ConnectionError as exc:

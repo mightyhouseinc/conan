@@ -23,10 +23,7 @@ def cross_building(conanfile=None, skip_x64_x86=False):
 
     if host_os is not None and (build_os != host_os):
         return True
-    if host_arch is not None and (build_arch != host_arch):
-        return True
-
-    return False
+    return host_arch is not None and build_arch != host_arch
 
 
 def can_run(conanfile):
@@ -41,6 +38,4 @@ def can_run(conanfile):
     """
     # Issue related: https://github.com/conan-io/conan/issues/11035
     allowed = conanfile.conf.get("tools.build.cross_building:can_run", check_type=bool)
-    if allowed is None:
-        return not cross_building(conanfile)
-    return allowed
+    return not cross_building(conanfile) if allowed is None else allowed

@@ -42,8 +42,7 @@ class ConanFileLoader:
                           update=None, check_update=None, tested_python_requires=None):
         """ loads a conanfile basic object without evaluating anything, returns the module too
         """
-        cached = self._cached_conanfile_classes.get(conanfile_path)
-        if cached:
+        if cached := self._cached_conanfile_classes.get(conanfile_path):
             conanfile = cached[0](display)
             conanfile._conan_helpers = self._conanfile_helpers
             if hasattr(conanfile, "init") and callable(conanfile.init):
@@ -76,7 +75,7 @@ class ConanFileLoader:
                     result.init()
             return result, module
         except ConanException as e:
-            raise ConanException("Error loading conanfile at '{}': {}".format(conanfile_path, e))
+            raise ConanException(f"Error loading conanfile at '{conanfile_path}': {e}")
 
     @staticmethod
     def _load_data(conanfile_path):
@@ -87,7 +86,7 @@ class ConanFileLoader:
         try:
             data = yaml.safe_load(load(data_path))
         except Exception as e:
-            raise ConanException("Invalid yml format at {}: {}".format(DATA_YML, e))
+            raise ConanException(f"Invalid yml format at {DATA_YML}: {e}")
 
         return data or {}
 
@@ -102,25 +101,26 @@ class ConanFileLoader:
         # Export does a check on existing name & version
         if name:
             if conanfile.name and name != conanfile.name:
-                raise ConanException("Package recipe with name %s!=%s" % (name, conanfile.name))
+                raise ConanException(f"Package recipe with name {name}!={conanfile.name}")
             conanfile.name = name
 
         if version:
             if conanfile.version and version != conanfile.version:
-                raise ConanException("Package recipe with version %s!=%s"
-                                     % (version, conanfile.version))
+                raise ConanException(
+                    f"Package recipe with version {version}!={conanfile.version}"
+                )
             conanfile.version = version
 
         if user:
             if conanfile.user and user != conanfile.user:
-                raise ConanException("Package recipe with user %s!=%s"
-                                     % (user, conanfile.user))
+                raise ConanException(f"Package recipe with user {user}!={conanfile.user}")
             conanfile.user = user
 
         if channel:
             if conanfile.channel and channel != conanfile.channel:
-                raise ConanException("Package recipe with channel %s!=%s"
-                                     % (channel, conanfile.channel))
+                raise ConanException(
+                    f"Package recipe with channel {channel}!={conanfile.channel}"
+                )
             conanfile.channel = channel
 
         if hasattr(conanfile, "set_name"):
@@ -159,7 +159,7 @@ class ConanFileLoader:
 
         ref = RecipeReference(conanfile.name, conanfile.version, user, channel)
         if str(ref):
-            conanfile.display_name = "%s (%s)" % (os.path.basename(conanfile_path), str(ref))
+            conanfile.display_name = f"{os.path.basename(conanfile_path)} ({str(ref)})"
         else:
             conanfile.display_name = os.path.basename(conanfile_path)
         conanfile.output.scope = conanfile.display_name
@@ -167,7 +167,7 @@ class ConanFileLoader:
             conanfile._conan_is_consumer = True
             return conanfile
         except Exception as e:  # re-raise with file name
-            raise ConanException("%s: %s" % (conanfile_path, str(e)))
+            raise ConanException(f"{conanfile_path}: {str(e)}")
 
     def load_conanfile(self, conanfile_path, ref, graph_lock=None, remotes=None,
                        update=None, check_update=None):
@@ -294,7 +294,7 @@ def parse_conanfile(conanfile_path):
         conanfile = _parse_module(module, filename)
         return module, conanfile
     except Exception as e:  # re-raise with file name
-        raise ConanException("%s: %s" % (conanfile_path, str(e)))
+        raise ConanException(f"{conanfile_path}: {str(e)}")
 
 
 def load_python_file(conan_file_path):
@@ -302,7 +302,7 @@ def load_python_file(conan_file_path):
     """
 
     if not os.path.exists(conan_file_path):
-        raise NotFoundException("%s not found!" % conan_file_path)
+        raise NotFoundException(f"{conan_file_path} not found!")
 
     module_id = str(uuid.uuid1())
     current_dir = os.path.dirname(conan_file_path)
@@ -318,21 +318,22 @@ def load_python_file(conan_file_path):
                 spec.loader.exec_module(loaded)
                 sys.dont_write_bytecode = old_dont_write_bytecode
             except ImportError:
-                version_txt = _get_required_conan_version_without_loading(conan_file_path)
-                if version_txt:
+                if version_txt := _get_required_conan_version_without_loading(
+                    conan_file_path
+                ):
                     validate_conan_version(version_txt)
                 raise
 
-            required_conan_version = getattr(loaded, "required_conan_version", None)
-            if required_conan_version:
+            if required_conan_version := getattr(
+                loaded, "required_conan_version", None
+            ):
                 validate_conan_version(required_conan_version)
 
         # These lines are necessary, otherwise local conanfile imports with same name
         # collide, but no error, and overwrite other packages imports!!
         added_modules = set(sys.modules).difference(old_modules)
         for added in added_modules:
-            module = sys.modules[added]
-            if module:
+            if module := sys.modules[added]:
                 try:
                     try:
                         # Most modules will have __file__ != None
@@ -346,7 +347,7 @@ def load_python_file(conan_file_path):
                 else:
                     if folder.startswith(current_dir):
                         module = sys.modules.pop(added)
-                        sys.modules["%s.%s" % (module_id, added)] = module
+                        sys.modules[f"{module_id}.{added}"] = module
     except ConanException:
         raise
     except Exception:

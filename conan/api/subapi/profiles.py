@@ -78,9 +78,16 @@ class ProfilesAPI:
         cache_settings = self._conan_api.config.settings_yml
         profile_plugin = self._load_profile_plugin()
 
-        profile = self._get_profile(profiles, settings, options, conf, cwd, cache_settings,
-                                    profile_plugin, global_conf)
-        return profile
+        return self._get_profile(
+            profiles,
+            settings,
+            options,
+            conf,
+            cwd,
+            cache_settings,
+            profile_plugin,
+            global_conf,
+        )
 
     def _get_profile(self, profiles, settings, options, conf, cwd, cache_settings,
                      profile_plugin, global_conf):
@@ -90,7 +97,7 @@ class ProfilesAPI:
             try:
                 profile_plugin(profile)
             except Exception as e:
-                msg = f"Error while processing 'profile.py' plugin"
+                msg = "Error while processing 'profile.py' plugin"
                 msg = scoped_traceback(msg, e, scope="/extensions/plugins")
                 raise ConanException(msg)
         profile.process_settings(cache_settings)
@@ -106,8 +113,9 @@ class ProfilesAPI:
         """
         cwd = cwd or os.getcwd()
         profiles_folder = self._home_paths.profiles_path
-        profile_path = ProfileLoader.get_profile_path(profiles_folder, profile, cwd, exists=exists)
-        return profile_path
+        return ProfileLoader.get_profile_path(
+            profiles_folder, profile, cwd, exists=exists
+        )
 
     def list(self):
         """

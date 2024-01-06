@@ -108,8 +108,7 @@ class Version:
         except TypeError:
             raise ConanException(f"Cannot bump '{self._value} version index {index}, not an int")
         items.extend([0] * (len(items) - index - 1))
-        v = ".".join(str(i) for i in items)
-        v += "-"  # Exclude prereleases
+        v = ".".join(str(i) for i in items) + "-"
         return Version(v)
 
     @property
@@ -179,17 +178,17 @@ class Version:
         if self._pre:
             if other._pre:  # both are pre-releases
                 return (self._nonzero_items, self._pre, self._build) < \
-                       (other._nonzero_items, other._pre, other._build)
+                           (other._nonzero_items, other._pre, other._build)
             else:  # Left hand is pre-release, right side is regular
-                if self._nonzero_items == other._nonzero_items:  # Problem only happens if both equal
-                    return True
-                else:
-                    return self._nonzero_items < other._nonzero_items
-        else:
-            if other._pre:  # Left hand is regular, right side is pre-release
-                if self._nonzero_items == other._nonzero_items:  # Problem only happens if both equal
-                    return False
-                else:
-                    return self._nonzero_items < other._nonzero_items
-            else:  # None of them is pre-release
-                return (self._nonzero_items, self._build) < (other._nonzero_items, other._build)
+                return (
+                    True
+                    if self._nonzero_items == other._nonzero_items
+                    else self._nonzero_items < other._nonzero_items
+                )
+        elif other._pre:  # Left hand is regular, right side is pre-release
+            if self._nonzero_items == other._nonzero_items:  # Problem only happens if both equal
+                return False
+            else:
+                return self._nonzero_items < other._nonzero_items
+        else:  # None of them is pre-release
+            return (self._nonzero_items, self._build) < (other._nonzero_items, other._build)

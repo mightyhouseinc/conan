@@ -22,7 +22,7 @@ def run_package_method(conanfile, package_id, hook_manager, ref):
     scoped_output = conanfile.output
     # Make the copy of all the patterns
     scoped_output.info("Generating the package")
-    scoped_output.info("Packaging in folder %s" % conanfile.package_folder)
+    scoped_output.info(f"Packaging in folder {conanfile.package_folder}")
 
     hook_manager.execute("pre_package", conanfile=conanfile)
     if hasattr(conanfile, "package"):
@@ -36,15 +36,15 @@ def run_package_method(conanfile, package_id, hook_manager, ref):
     save(os.path.join(conanfile.package_folder, CONANINFO), conanfile.info.dumps())
     manifest = FileTreeManifest.create(conanfile.package_folder)
     manifest.save(conanfile.package_folder)
-    package_output = ConanOutput(scope="%s: package()" % scoped_output.scope)
+    package_output = ConanOutput(scope=f"{scoped_output.scope}: package()")
     manifest.report_summary(package_output, "Packaged")
 
     prev = manifest.summary_hash
-    scoped_output.info("Created package revision %s" % prev)
+    scoped_output.info(f"Created package revision {prev}")
     pref = PkgReference(ref, package_id)
     pref.revision = prev
-    scoped_output.success("Package '%s' created" % package_id)
-    scoped_output.success("Full package reference: {}".format(pref.repr_notime()))
+    scoped_output.success(f"Package '{package_id}' created")
+    scoped_output.success(f"Full package reference: {pref.repr_notime()}")
     return prev
 
 

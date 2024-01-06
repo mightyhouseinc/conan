@@ -23,11 +23,7 @@ class JWTAuthentication(AuthorizationHeader):
         """Parse header_value and return kwargs to apply bottle
         method parameters"""
         try:
-            if not header_value:
-                username = None
-            else:
-                # Check if its valid obtaining the password_timestamp
-                username = self.manager.get_user(token=header_value)
+            username = self.manager.get_user(token=header_value) if header_value else None
         except Exception:
             # Check if
             resp = HTTPResponse("Wrong JWT token!", "401 Unauthorized")

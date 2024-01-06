@@ -73,7 +73,7 @@ class UploadAPI:
         url = config.get("core.sources:upload_url", check_type=str)
         if url is None:
             return
-        url = url if url.endswith("/") else url + "/"
+        url = url if url.endswith("/") else f"{url}/"
 
         output = ConanOutput()
         output.subtitle("Uploading backup sources")

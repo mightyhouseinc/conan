@@ -103,11 +103,7 @@ class GenConanfile(object):
 
     @staticmethod
     def _get_full_ref_str(ref):
-        if isinstance(ref, RecipeReference):
-            ref_str = ref.repr_notime()
-        else:
-            ref_str = ref
-        return ref_str
+        return ref.repr_notime() if isinstance(ref, RecipeReference) else ref
 
     def with_requirement(self, ref, **kwargs):
         self._requirements = self._requirements or []
@@ -211,8 +207,8 @@ class GenConanfile(object):
         return self
 
     def with_package_info(self, cpp_info=None, env_info=None):
-        assert isinstance(cpp_info, dict), "cpp_info ({}) expects dict".format(type(cpp_info))
-        assert isinstance(env_info, dict), "env_info ({}) expects dict".format(type(env_info))
+        assert isinstance(cpp_info, dict), f"cpp_info ({type(cpp_info)}) expects dict"
+        assert isinstance(env_info, dict), f"env_info ({type(env_info)}) expects dict"
         self._package_info = self._package_info or {}
         if cpp_info:
             self._package_info["cpp_info"] = cpp_info
@@ -247,109 +243,108 @@ class GenConanfile(object):
 
     @property
     def _name_render(self):
-        return "name = '{}'".format(self._name)
+        return f"name = '{self._name}'"
 
     @property
     def _version_render(self):
-        return "version = '{}'".format(self._version)
+        return f"version = '{self._version}'"
 
     @property
     def _package_type_render(self):
-        return "package_type = '{}'".format(self._package_type)
+        return f"package_type = '{self._package_type}'"
 
     @property
     def _provides_render(self):
-        line = ", ".join('"{}"'.format(provide) for provide in self._provides)
-        return "provides = {}".format(line)
+        line = ", ".join(f'"{provide}"' for provide in self._provides)
+        return f"provides = {line}"
 
     @property
     def _deprecated_render(self):
-        return "deprecated = {}".format(self._deprecated)
+        return f"deprecated = {self._deprecated}"
 
     @property
     def _generators_render(self):
-        line = ", ".join('"{}"'.format(generator) for generator in self._generators)
-        return "generators = {}".format(line)
+        line = ", ".join(f'"{generator}"' for generator in self._generators)
+        return f"generators = {line}"
 
     @property
     def _revision_mode_render(self):
-        line = "revision_mode=\"{}\"".format(self._revision_mode)
-        return line
+        return f'revision_mode=\"{self._revision_mode}\"'
 
     @property
     def _settings_render(self):
-        line = ", ".join('"%s"' % s for s in self._settings)
-        return "settings = {}".format(line)
+        line = ", ".join(f'"{s}"' for s in self._settings)
+        return f"settings = {line}"
 
     @property
     def _options_render(self):
-        line = ", ".join('"%s": %s' % (k, v) for k, v in self._options.items())
-        tmp = "options = {%s}" % line
-        return tmp
+        line = ", ".join(f'"{k}": {v}' for k, v in self._options.items())
+        return "options = {%s}" % line
 
     @property
     def _default_options_render(self):
-        line = ", ".join('"%s": %s' % (k, v) for k, v in self._default_options.items())
-        tmp = "default_options = {%s}" % line
-        return tmp
+        line = ", ".join(f'"{k}": {v}' for k, v in self._default_options.items())
+        return "default_options = {%s}" % line
 
     @property
     def _build_requirements_render(self):
         lines = []
         for ref, kwargs in self._build_requirements:
-            args = ", ".join("{}={}".format(k, f'"{v}"' if not isinstance(v, (bool, dict)) else v)
-                             for k, v in kwargs.items())
-            lines.append('        self.build_requires("{}", {})'.format(ref, args))
+            args = ", ".join(
+                f"""{k}={f'"{v}"' if not isinstance(v, (bool, dict)) else v}"""
+                for k, v in kwargs.items()
+            )
+            lines.append(f'        self.build_requires("{ref}", {args})')
         return "def build_requirements(self):\n{}\n".format("\n".join(lines))
 
     @property
     def _build_requires_render(self):
-        line = ", ".join(['"{}"'.format(r) for r in self._build_requires])
-        tmp = "build_requires = %s" % line
-        return tmp
+        line = ", ".join([f'"{r}"' for r in self._build_requires])
+        return f"build_requires = {line}"
 
     @property
     def _python_requires_render(self):
-        line = ", ".join(['"{}"'.format(r) for r in self._python_requires])
-        tmp = "python_requires = %s" % line
-        return tmp
+        line = ", ".join([f'"{r}"' for r in self._python_requires])
+        return f"python_requires = {line}"
 
     @property
     def _tool_requires_render(self):
-        line = ", ".join(['"{}"'.format(r) for r in self._tool_requires])
-        tmp = "tool_requires = %s" % line
-        return tmp
+        line = ", ".join([f'"{r}"' for r in self._tool_requires])
+        return f"tool_requires = {line}"
 
     @property
     def _requires_render(self):
-        items = []
-        for ref in self._requires:
-            items.append('"{}"'.format(ref))
-        return "requires = ({}, )".format(", ".join(items))
+        items = [f'"{ref}"' for ref in self._requires]
+        return f'requires = ({", ".join(items)}, )'
 
     @property
     def _test_requires_render(self):
-        line = ", ".join(['"{}"'.format(r) for r in self._test_requires])
-        tmp = "test_requires = {}".format(line)
-        return tmp
+        line = ", ".join([f'"{r}"' for r in self._test_requires])
+        return f"test_requires = {line}"
 
     @property
     def _requirements_render(self):
         lines = ["", "    def requirements(self):"]
         for ref, kwargs in self._requirements or []:
-            args = ", ".join("{}={}".format(k, f'"{v}"' if isinstance(v, str) else v)
-                             for k, v in kwargs.items())
-            lines.append('        self.requires("{}", {})'.format(ref, args))
+            args = ", ".join(
+                f"""{k}={f'"{v}"' if isinstance(v, str) else v}"""
+                for k, v in kwargs.items()
+            )
+            lines.append(f'        self.requires("{ref}", {args})')
 
         for ref, kwargs in self._build_requirements or []:
-            args = ", ".join("{}={}".format(k, f'"{v}"' if not isinstance(v, (bool, dict)) else v)
-                             for k, v in kwargs.items())
-            lines.append('        self.build_requires("{}", {})'.format(ref, args))
+            args = ", ".join(
+                f"""{k}={f'"{v}"' if not isinstance(v, (bool, dict)) else v}"""
+                for k, v in kwargs.items()
+            )
+            lines.append(f'        self.build_requires("{ref}", {args})')
 
         for ref, kwargs in self._tool_requirements or []:
-            args = ", ".join("{}={}".format(k, f'"{v}"' if not isinstance(v, (bool, dict)) else v)
-                             for k, v in kwargs.items())
-            lines.append('        self.tool_requires("{}", {})'.format(ref, args))
+            args = ", ".join(
+                f"""{k}={f'"{v}"' if not isinstance(v, (bool, dict)) else v}"""
+                for k, v in kwargs.items()
+            )
+            lines.append(f'        self.tool_requires("{ref}", {args})')
 
         return "\n".join(lines)
 
@@ -362,22 +357,27 @@ class GenConanfile(object):
     def _package_method_render(self):
         lines = []
         if self._package_lines:
-            lines.extend("        {}".format(line) for line in self._package_lines)
+            lines.extend(f"        {line}" for line in self._package_lines)
         if self._package_files:
-            lines = ['        save(self, os.path.join(self.package_folder, "{}"), "{}")'
-                     ''.format(key, value)
-                     for key, value in self._package_files.items()]
+            lines = [
+                f'        save(self, os.path.join(self.package_folder, "{key}"), "{value}")'
+                for key, value in self._package_files.items()
+            ]
 
         if self._package_files_env:
-            lines.extend(['        save(self, os.path.join(self.package_folder, "{}"), '
-                          'os.getenv("{}"))'.format(key, value)
-                          for key, value in self._package_files_env.items()])
+            lines.extend(
+                [
+                    f'        save(self, os.path.join(self.package_folder, "{key}"), os.getenv("{value}"))'
+                    for key, value in self._package_files_env.items()
+                ]
+            )
         if self._package_files_link:
-            lines.extend(['        with chdir(self, os.path.dirname('
-                          'os.path.join(self.package_folder, "{}"))):\n'
-                          '            os.symlink(os.path.basename("{}"), '
-                          'os.path.join(self.package_folder, "{}"))'.format(key, key, value)
-                          for key, value in self._package_files_link.items()])
+            lines.extend(
+                [
+                    f'        with chdir(self, os.path.dirname(os.path.join(self.package_folder, "{key}"))):\n            os.symlink(os.path.basename("{key}"), os.path.join(self.package_folder, "{value}"))'
+                    for key, value in self._package_files_link.items()
+                ]
+            )
 
         if not lines:
             return ""
@@ -392,7 +392,7 @@ class GenConanfile(object):
             return None
         lines = []
         if self._build_messages:
-            lines = ['        self.output.warning("{}")'.format(m) for m in self._build_messages]
+            lines = [f'        self.output.warning("{m}")' for m in self._build_messages]
         if self._cmake_build:
             lines.extend(['        cmake = CMake(self)',
                           '        cmake.configure()',
@@ -409,11 +409,12 @@ class GenConanfile(object):
             for k, v in self._package_info["cpp_info"].items():
                 if k == "components":
                     for comp_name, comp in v.items():
-                        for comp_attr_name, comp_attr_value in comp.items():
-                            lines.append('        self.cpp_info.components["{}"].{} = {}'.format(
-                                comp_name, comp_attr_name, str(comp_attr_value)))
+                        lines.extend(
+                            f'        self.cpp_info.components["{comp_name}"].{comp_attr_name} = {str(comp_attr_value)}'
+                            for comp_attr_name, comp_attr_value in comp.items()
+                        )
                 else:
-                    lines.append('        self.cpp_info.{} = {}'.format(k, str(v)))
+                    lines.append(f'        self.cpp_info.{k} = {str(v)}')
 
         return """
     def package_info(self):
@@ -422,7 +423,7 @@ class GenConanfile(object):
 
     @property
     def _package_id_lines_render(self):
-        lines = ['        {}'.format(line) for line in self._package_id_lines]
+        lines = [f'        {line}' for line in self._package_id_lines]
         return """
     def package_id(self):
 {}
@@ -430,27 +431,29 @@ class GenConanfile(object):
 
     @property
     def _test_lines_render(self):
-        lines = ["",
-                 "    def requirements(self):",
-                 '         self.requires(self.tested_reference_str)',
-                 "",
-                 '    def test(self):'] + ['        %s' % m for m in self._test_lines]
+        lines = [
+            "",
+            "    def requirements(self):",
+            '         self.requires(self.tested_reference_str)',
+            "",
+            '    def test(self):',
+        ] + [f'        {m}' for m in self._test_lines]
         return "\n".join(lines)
 
     @property
     def _exports_sources_render(self):
-        line = ", ".join('"{}"'.format(e) for e in self._exports_sources)
-        return "exports_sources = {}".format(line)
+        line = ", ".join(f'"{e}"' for e in self._exports_sources)
+        return f"exports_sources = {line}"
 
     @property
     def _exports_render(self):
-        line = ", ".join('"{}"'.format(e) for e in self._exports)
-        return "exports = {}".format(line)
+        line = ", ".join(f'"{e}"' for e in self._exports)
+        return f"exports = {line}"
 
     @property
     def _class_attributes_render(self):
         self._class_attributes = self._class_attributes or []
-        return ["    {}".format(a) for a in self._class_attributes]
+        return [f"    {a}" for a in self._class_attributes]
 
     def __repr__(self):
         ret = []
@@ -467,14 +470,14 @@ class GenConanfile(object):
                 # FIXME: This seems exclusive, but we could mix them?
                 v = self._requirements or self._tool_requirements or self._build_requirements
             else:
-                v = getattr(self, "_{}".format(member), None)
+                v = getattr(self, f"_{member}", None)
             if v is not None:
-                ret.append("    {}".format(getattr(self, "_{}_render".format(member))))
+                ret.append(f'    {getattr(self, f"_{member}_render")}')
 
         ret.extend(self._class_attributes_render)
         build = self._build_render
         if build is not None:
-            ret.append("    {}".format(self._build_render))
+            ret.append(f"    {self._build_render}")
         if ret[-1] == "class HelloConan(ConanFile):":
             ret.append("    pass")
         return "\n".join(ret)

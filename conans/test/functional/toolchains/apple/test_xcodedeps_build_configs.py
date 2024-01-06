@@ -57,15 +57,19 @@ def test_xcodedeps_build_configurations():
     }, clean_first=True)
 
     for config in ["Release", "Debug"]:
-        client.run("install . -s build_type={} -s arch=x86_64 --build=missing -g XcodeDeps".format(config))
+        client.run(
+            f"install . -s build_type={config} -s arch=x86_64 --build=missing -g XcodeDeps"
+        )
 
     client.run_command("xcodegen generate")
 
     for config in ["Release", "Debug"]:
-        client.run_command("xcodebuild -project app.xcodeproj -configuration {} -arch x86_64".format(config))
-        client.run_command("./build/{}/app".format(config))
-        assert "App {}!".format(config) in client.out
-        assert "hello/0.1: Hello World {}!".format(config).format(config) in client.out
+        client.run_command(
+            f"xcodebuild -project app.xcodeproj -configuration {config} -arch x86_64"
+        )
+        client.run_command(f"./build/{config}/app")
+        assert f"App {config}!" in client.out
+        assert f"hello/0.1: Hello World {config}!".format(config) in client.out
 
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="Only for MacOS")
@@ -96,7 +100,7 @@ def test_frameworks():
     client.run("install . -s build_type=Release -s arch=x86_64 --build=missing -g XcodeDeps")
     client.run_command("xcodegen generate")
     client.run_command("xcodebuild -project app.xcodeproj -configuration Release -arch x86_64")
-    client.run_command("./build/Release/{}".format(project_name))
+    client.run_command(f"./build/Release/{project_name}")
     assert "Hello!" in client.out
 
 

@@ -117,11 +117,14 @@ def _check_tested_reference_matches(deps_graph, tested_ref, out):
     it is correct but weird and likely a mistake"""
     # https://github.com/conan-io/conan/issues/10453
     direct_refs = [n.conanfile.ref for n in deps_graph.root.neighbors()]
-    # There is a reference with same name but different
-    missmatch = [ref for ref in direct_refs if ref.name == tested_ref.name and ref != tested_ref]
-    if missmatch:
-        out.warning("The package created was '{}' but the reference being "
-                    "tested is '{}'".format(missmatch[0], tested_ref))
+    if missmatch := [
+        ref
+        for ref in direct_refs
+        if ref.name == tested_ref.name and ref != tested_ref
+    ]:
+        out.warning(
+            f"The package created was '{missmatch[0]}' but the reference being tested is '{tested_ref}'"
+        )
 
 
 def test_package(conan_api, deps_graph, test_conanfile_path, tested_python_requires=None):
@@ -129,9 +132,9 @@ def test_package(conan_api, deps_graph, test_conanfile_path, tested_python_requi
     out.title("Testing the package")
     # TODO: Better modeling when we are testing a python_requires
     if len(deps_graph.nodes) == 1 and not tested_python_requires:
-        raise ConanException("The conanfile at '{}' doesn't declare any requirement, "
-                             "use `self.tested_reference_str` to require the "
-                             "package being created.".format(test_conanfile_path))
+        raise ConanException(
+            f"The conanfile at '{test_conanfile_path}' doesn't declare any requirement, use `self.tested_reference_str` to require the package being created."
+        )
     conanfile_folder = os.path.dirname(test_conanfile_path)
     conanfile = deps_graph.root.conanfile
     # To make sure the folders are correct

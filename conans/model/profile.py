@@ -61,22 +61,22 @@ class Profile(object):
 
     def dumps(self):
         result = ["[settings]"]
-        for name, value in sorted(self.settings.items()):
-            result.append("%s=%s" % (name, value))
+        result.extend(
+            f"{name}={value}" for name, value in sorted(self.settings.items())
+        )
         for package, values in self.package_settings.items():
-            for name, value in sorted(values.items()):
-                result.append("%s:%s=%s" % (package, name, value))
-
-        options_str = self.options.dumps()
-        if options_str:
-            result.append("[options]")
-            result.append(options_str)
-
+            result.extend(
+                f"{package}:{name}={value}"
+                for name, value in sorted(values.items())
+            )
+        if options_str := self.options.dumps():
+            result.extend(("[options]", options_str))
         if self.tool_requires:
             result.append("[tool_requires]")
-            for pattern, req_list in self.tool_requires.items():
-                result.append("%s: %s" % (pattern, ", ".join(str(r) for r in req_list)))
-
+            result.extend(
+                f'{pattern}: {", ".join(str(r) for r in req_list)}'
+                for pattern, req_list in self.tool_requires.items()
+            )
         if self.platform_tool_requires:
             result.append("[platform_tool_requires]")
             result.extend(str(t) for t in self.platform_tool_requires)
@@ -86,17 +86,11 @@ class Profile(object):
             result.extend(str(t) for t in self.platform_requires)
 
         if self.conf:
-            result.append("[conf]")
-            result.append(self.conf.dumps())
-
+            result.extend(("[conf]", self.conf.dumps()))
         if self.buildenv:
-            result.append("[buildenv]")
-            result.append(self.buildenv.dumps())
-
+            result.extend(("[buildenv]", self.buildenv.dumps()))
         if self.runenv:
-            result.append("[runenv]")
-            result.append(self.runenv.dumps())
-
+            result.extend(("[runenv]", self.runenv.dumps()))
         if result and result[-1] != "":
             result.append("")
 
@@ -152,7 +146,7 @@ class Profile(object):
                 if "." not in name:
                     if name in self.settings and self.settings[name] != value:
                         for cur_name, _ in self.settings.items():
-                            if cur_name.startswith("%s." % name):
+                            if cur_name.startswith(f"{name}."):
                                 del res[cur_name]
             # Now merge the new values
             res.update(new_settings)

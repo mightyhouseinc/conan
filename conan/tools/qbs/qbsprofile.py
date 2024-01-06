@@ -10,7 +10,7 @@ from conan.errors import ConanException
 from conans.util.files import save
 
 _profile_name = 'conan'
-_profiles_prefix_in_config = 'profiles.%s' % _profile_name
+_profiles_prefix_in_config = f'profiles.{_profile_name}'
 
 _architecture = {
     'x86': 'x86',
@@ -105,7 +105,7 @@ def _check_for_compiler(conanfile):
         raise ConanException('Qbs: need compiler to be set in settings')
 
     if compiler not in ['msvc', 'gcc', 'clang']:
-        raise ConanException('Qbs: compiler {} not supported'.format(compiler))
+        raise ConanException(f'Qbs: compiler {compiler} not supported')
 
 
 def _default_compiler_name(conanfile):
@@ -116,9 +116,7 @@ def _default_compiler_name(conanfile):
         if compiler == 'gcc':
             return 'mingw'
         if compiler == 'Visual Studio':
-            if msvs_toolset(conanfile) == 'ClangCL':
-                return 'clang-cl'
-            return 'cl'
+            return 'clang-cl' if msvs_toolset(conanfile) == 'ClangCL' else 'cl'
         if compiler == 'msvc':
             return 'cl'
         if compiler == 'clang':
@@ -129,7 +127,7 @@ def _default_compiler_name(conanfile):
 
 
 def _settings_dir(conanfile):
-    return '%s/conan_qbs_toolchain_settings_dir' % conanfile.install_folder
+    return f'{conanfile.install_folder}/conan_qbs_toolchain_settings_dir'
 
 
 def _setup_toolchains(conanfile):
@@ -144,20 +142,21 @@ def _setup_toolchains(conanfile):
             env_context = tools.vcvars(conanfile)
 
     with env_context:
-        cmd = 'qbs-setup-toolchains --settings-dir "%s" %s %s' % (
-              _settings_dir(conanfile), compiler, _profile_name)
+        cmd = f'qbs-setup-toolchains --settings-dir "{_settings_dir(conanfile)}" {compiler} {_profile_name}'
         conanfile.run(cmd)
 
 
 def _read_qbs_toolchain_from_config(conanfile):
     s = StringIO()
-    conanfile.run('qbs-config --settings-dir "%s" --list' % (
-                    _settings_dir(conanfile)), output=s)
+    conanfile.run(
+        f'qbs-config --settings-dir "{_settings_dir(conanfile)}" --list',
+        output=s,
+    )
     config = {}
     s.seek(0)
     for line in s:
         colon = line.index(':')
-        if 0 < colon and not line.startswith('#'):
+        if colon > 0 and not line.startswith('#'):
             full_key = line[:colon]
             if full_key.startswith(_profiles_prefix_in_config):
                 key = full_key[len(_profiles_prefix_in_config)+1:]
@@ -186,17 +185,19 @@ class LinkerFlagsParser(object):
 def _flags_from_env():
     flags_from_env = {}
     if tools.get_env('ASFLAGS'):
-        flags_from_env['cpp.assemblerFlags'] = '%s' % (
-            _env_var_to_list(tools.get_env('ASFLAGS')))
+        flags_from_env[
+            'cpp.assemblerFlags'
+        ] = f"{_env_var_to_list(tools.get_env('ASFLAGS'))}"
     if tools.get_env('CFLAGS'):
-        flags_from_env['cpp.cFlags'] = '%s' % (
-            _env_var_to_list(tools.get_env('CFLAGS')))
+        flags_from_env['cpp.cFlags'] = f"{_env_var_to_list(tools.get_env('CFLAGS'))}"
     if tools.get_env('CPPFLAGS'):
-        flags_from_env['cpp.cppFlags'] = '%s' % (
-            _env_var_to_list(tools.get_env('CPPFLAGS')))
+        flags_from_env[
+            'cpp.cppFlags'
+        ] = f"{_env_var_to_list(tools.get_env('CPPFLAGS'))}"
     if tools.get_env('CXXFLAGS'):
-        flags_from_env['cpp.cxxFlags'] = '%s' % (
-            _env_var_to_list(tools.get_env('CXXFLAGS')))
+        flags_from_env[
+            'cpp.cxxFlags'
+        ] = f"{_env_var_to_list(tools.get_env('CXXFLAGS'))}"
     if tools.get_env('LDFLAGS'):
         parser = LinkerFlagsParser(_env_var_to_list(tools.get_env('LDFLAGS')))
         flags_from_env['cpp.linkerFlags'] = str(parser.linker_flags)
@@ -307,5 +308,4 @@ class QbsProfile(object):
             'runtime_library': self._runtime_library,
         }
         t = Template(self._template_toolchain)
-        content = t.render(**context)
-        return content
+        return t.render(**context)

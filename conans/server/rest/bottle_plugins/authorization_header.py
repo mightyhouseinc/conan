@@ -49,13 +49,12 @@ class AuthorizationHeader(object, metaclass=ABCMeta):
         """ Get from the request the header of http basic auth:
          http://en.wikipedia.org/wiki/Basic_access_authentication """
         auth_type = self.get_authorization_type()
-        if request.headers.get("Authorization", None) is not None:
-            auth_line = request.headers.get("Authorization", None)
-            if not auth_line.startswith("%s " % auth_type):
-                raise self.get_invalid_header_response()
-            return auth_line[len(auth_type) + 1:]
-        else:
+        if request.headers.get("Authorization", None) is None:
             return None
+        auth_line = request.headers.get("Authorization", None)
+        if not auth_line.startswith(f"{auth_type} "):
+            raise self.get_invalid_header_response()
+        return auth_line[len(auth_type) + 1:]
 
     @abstractmethod
     def get_authorization_type(self):

@@ -8,8 +8,10 @@ def option_not_exist_msg(option_name, existing_options):
     """ Someone is referencing an option that is not available in the current package
     options
     """
-    result = ["option '%s' doesn't exist" % option_name,
-              "Possible options are %s" % existing_options or "none"]
+    result = [
+        f"option '{option_name}' doesn't exist",
+        f"Possible options are {existing_options}" or "none",
+    ]
     return "\n".join(result)
 
 
@@ -28,9 +30,9 @@ class _PackageOption:
         if self._value is None:
             return None
         if scope:
-            return "%s:%s=%s" % (scope, self._name, self._value)
+            return f"{scope}:{self._name}={self._value}"
         else:
-            return "%s=%s" % (self._name, self._value)
+            return f"{self._name}={self._value}"
 
     def copy_conaninfo_option(self):
         # To generate a copy without validation, for package_id info.options value
@@ -68,9 +70,7 @@ class _PackageOption:
             return self._value is None
         other = str(other)
         self._check_valid_value(other)
-        if self._value is None:
-            return False  # Other is not None here
-        return other == self.__str__()
+        return False if self._value is None else other == self.__str__()
 
     @property
     def name(self):
@@ -91,7 +91,7 @@ class _PackageOption:
         if self._value is not None:
             return
         if None not in self._possible_values:
-            raise ConanException("'options.%s' value not defined" % self._name)
+            raise ConanException(f"'options.{self._name}' value not defined")
 
 
 class _PackageOptions:
@@ -108,8 +108,7 @@ class _PackageOptions:
     def dumps(self, scope=None):
         result = []
         for _, package_option in sorted(list(self._data.items())):
-            dump = package_option.dumps(scope)
-            if dump:
+            if dump := package_option.dumps(scope):
                 result.append(dump)
         return "\n".join(result)
 
@@ -158,14 +157,14 @@ class _PackageOptions:
             raise ConanException(option_not_exist_msg(field, list(self._data.keys())))
 
     def __getattr__(self, field):
-        assert field[0] != "_", "ERROR %s" % field
+        assert field[0] != "_", f"ERROR {field}"
         try:
             return self._data[field]
         except KeyError:
             raise ConanException(option_not_exist_msg(field, list(self._data.keys())))
 
     def __delattr__(self, field):
-        assert field[0] != "_", "ERROR %s" % field
+        assert field[0] != "_", f"ERROR {field}"
         # It is always possible to remove an option, even if it is frozen (freeze=True),
         # and it got a value, because it is the only way an option could be removed
         # conditionally to other option value (like fPIC if shared)
@@ -190,10 +189,10 @@ class _PackageOptions:
         self._data.setdefault(item, _PackageOption(item, None)).value = value
 
     def items(self):
-        result = []
-        for field, package_option in sorted(list(self._data.items())):
-            result.append((field, package_option.value))
-        return result
+        return [
+            (field, package_option.value)
+            for field, package_option in sorted(list(self._data.items()))
+        ]
 
     def update_options(self, other, is_pattern=False):
         """
@@ -226,15 +225,13 @@ class Options:
                     if len(tokens) == 2:
                         package, option = tokens
                         if "/" not in package and "*" not in package and "&" not in package:
-                            msg = "The usage of package names `{}` in options is " \
-                                  "deprecated, use a pattern like `{}/*:{}` " \
-                                  "instead".format(k, package, option)
+                            msg = f"The usage of package names `{k}` in options is deprecated, use a pattern like `{package}/*:{option}` instead"
                             raise ConanException(msg)
                         self._deps_package_options.setdefault(package, _PackageOptions())[option] = v
                     else:
                         self._package_options[k] = v
         except Exception as e:
-            raise ConanException("Error while initializing options. %s" % str(e))
+            raise ConanException(f"Error while initializing options. {str(e)}")
 
     def __repr__(self):
         return self.dumps()
@@ -251,12 +248,10 @@ class Options:
             OtherPack:opt3=12.1
         """
         result = []
-        pkg_options_dumps = self._package_options.dumps()
-        if pkg_options_dumps:
+        if pkg_options_dumps := self._package_options.dumps():
             result.append(pkg_options_dumps)
         for pkg_pattern, pkg_option in sorted(self._deps_package_options.items()):
-            dep_pkg_option = pkg_option.dumps(scope=pkg_pattern)
-            if dep_pkg_option:
+            if dep_pkg_option := pkg_option.dumps(scope=pkg_pattern):
                 result.append(dep_pkg_option)
         return "\n".join(result)
 
@@ -277,12 +272,12 @@ class Options:
         # used by ConanInfo serialization, involved in "list package-ids" output
         # we need to maintain the "options" and "req_options" first level or servers will break
         # This happens always after reading from conaninfo.txt => all str and not None
-        result = {k: v for k, v in self._package_options.items()}
+        result = dict(self._package_options.items())
         # Include the dependencies ones, in case they have been explicitly added in package_id()
         # to the conaninfo.txt, we want to report them
         for pkg_pattern, pkg_option in sorted(self._deps_package_options.items()):
             for key, value in pkg_option.items():
-                result["%s:%s" % (pkg_pattern, key)] = value
+                result[f"{pkg_pattern}:{key}"] = value
         return result
 
     def clear(self):

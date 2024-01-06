@@ -4,6 +4,7 @@ https://packaging.python.org/en/latest/distributing.html
 https://github.com/pypa/sampleproject
 """
 
+
 # To use a consistent encoding
 from os import path
 
@@ -17,17 +18,21 @@ from os import path
 
 # The tests utils are used by conan-package-tools
 here = path.abspath(path.dirname(__file__))
-excluded_test_packages = ["conans.test.{}*".format(d)
-                         for d in os.listdir(os.path.join(here, "conans/test"))
-                         if os.path.isdir(os.path.join(here, "conans/test", d)) and d != "utils"]
+excluded_test_packages = [
+    f"conans.test.{d}*"
+    for d in os.listdir(os.path.join(here, "conans/test"))
+    if os.path.isdir(os.path.join(here, "conans/test", d)) and d != "utils"
+]
 
 
 def get_requires(filename):
     requirements = []
     with open(filename, "rt") as req_file:
-        for line in req_file.read().splitlines():
-            if not line.strip().startswith("#"):
-                requirements.append(line)
+        requirements.extend(
+            line
+            for line in req_file.read().splitlines()
+            if not line.strip().startswith("#")
+        )
     return requirements
 
 
@@ -37,8 +42,7 @@ def load_version():
                                             "conans", "__init__.py"))
     with open(filename, "rt") as version_file:
         conan_init = version_file.read()
-        version = re.search(r"__version__ = '([0-9a-z.-]+)'", conan_init).group(1)
-        return version
+        return re.search(r"__version__ = '([0-9a-z.-]+)'", conan_init).group(1)
 
 
 def generate_long_description_file():

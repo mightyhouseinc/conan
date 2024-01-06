@@ -37,13 +37,17 @@ def print_remote_user_list(results):
 
 def print_remote_user_set(results):
     for remote_name, result in results.items():
-        from_user = "'{}'".format(result["previous_info"]["user_name"])
-        from_user += " (anonymous)" \
-            if not result["previous_info"]["authenticated"] else " (authenticated)"
-        to_user = "'{}'".format(result["info"]["user_name"])
-        to_user += " (anonymous)" \
-            if not result["info"]["authenticated"] else " (authenticated)"
-        message = "Changed user of remote '{}' from {} to {}".format(remote_name, from_user, to_user)
+        from_user = f"""'{result["previous_info"]["user_name"]}'""" + (
+            " (anonymous)"
+            if not result["previous_info"]["authenticated"]
+            else " (authenticated)"
+        )
+        to_user = f"""'{result["info"]["user_name"]}'""" + (
+            " (anonymous)"
+            if not result["info"]["authenticated"]
+            else " (authenticated)"
+        )
+        message = f"Changed user of remote '{remote_name}' from {from_user} to {to_user}"
         cli_out_write(message)
 
 
@@ -175,7 +179,9 @@ def remote_login(conan_api, parser, subparser, *args):
     args = parser.parse_args(*args)
     remotes = conan_api.remotes.list(pattern=args.remote, only_enabled=False)
     if not remotes:
-        raise ConanException("There are no remotes matching the '{}' pattern".format(args.remote))
+        raise ConanException(
+            f"There are no remotes matching the '{args.remote}' pattern"
+        )
 
     creds = RemoteCredentials(conan_api.cache_folder, conan_api.config.global_conf)
     user, password = creds.auth(args.remote, args.username, args.password)
@@ -205,7 +211,9 @@ def remote_set_user(conan_api, parser, subparser, *args):
     args = parser.parse_args(*args)
     remotes = conan_api.remotes.list(pattern=args.remote)
     if not remotes:
-        raise ConanException("There are no remotes matching the '{}' pattern".format(args.remote))
+        raise ConanException(
+            f"There are no remotes matching the '{args.remote}' pattern"
+        )
 
     ret = OrderedDict()
     for r in remotes:
@@ -227,7 +235,9 @@ def remote_logout(conan_api, parser, subparser, *args):
     args = parser.parse_args(*args)
     remotes = conan_api.remotes.list(pattern=args.remote)
     if not remotes:
-        raise ConanException("There are no remotes matching the '{}' pattern".format(args.remote))
+        raise ConanException(
+            f"There are no remotes matching the '{args.remote}' pattern"
+        )
 
     ret = OrderedDict()
     for r in remotes:
@@ -265,7 +275,9 @@ def remote_auth(conan_api, parser, subparser, *args):
     args = parser.parse_args(*args)
     remotes = conan_api.remotes.list(pattern=args.remote)
     if not remotes:
-        raise ConanException("There are no remotes matching the '{}' pattern".format(args.remote))
+        raise ConanException(
+            f"There are no remotes matching the '{args.remote}' pattern"
+        )
 
     results = {}
     for r in remotes:

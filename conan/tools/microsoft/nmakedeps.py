@@ -18,7 +18,7 @@ class NMakeDeps(object):
     def _get_cpp_info(self):
         ret = CppInfo(self._conanfile)
         deps = self._conanfile.dependencies.host.topological_sort
-        deps = [dep for dep in reversed(deps.values())]
+        deps = list(reversed(deps.values()))
         for dep in deps:
             dep_cppinfo = dep.cpp_info.aggregated_components()
             # In case we have components, aggregate them, we do not support isolated
@@ -36,7 +36,7 @@ class NMakeDeps(object):
 
             def format_lib(lib):
                 ext = os.path.splitext(lib)[1]
-                return lib if ext in (".so", ".lib", ".a", ".dylib", ".bc") else '%s.lib' % lib
+                return lib if ext in (".so", ".lib", ".a", ".dylib", ".bc") else f'{lib}.lib'
 
             ret = []
             ret.extend(cpp_info.exelinkflags or [])

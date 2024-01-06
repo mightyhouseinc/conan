@@ -11,9 +11,11 @@ def bad_value_msg(name, value, value_range):
 
 
 def undefined_field(name, field, fields=None, value=None):
-    value_str = " for '%s'" % value if value else ""
-    result = ["'%s.%s' doesn't exist%s" % (name, field, value_str),
-              "'%s' possible configurations are %s" % (name, fields or "none")]
+    value_str = f" for '{value}'" if value else ""
+    result = [
+        f"'{name}.{field}' doesn't exist{value_str}",
+        f"""'{name}' possible configurations are {fields or "none"}""",
+    ]
     return ConanException("\n".join(result))
 
 
@@ -105,7 +107,7 @@ class SettingsItem(object):
         if not isinstance(self._definition, dict):
             raise undefined_field(self._name, item, None, self._value)
         if self._value is None:
-            raise ConanException("'%s' value not defined" % self._name)
+            raise ConanException(f"'{self._name}' value not defined")
         return self._definition[self._value]
 
     def __getattr__(self, item):
@@ -138,9 +140,8 @@ class SettingsItem(object):
     def values_list(self):
         if self._value is None:
             return []
-        result = []
         partial_name = ".".join(self._name.split(".")[1:])
-        result.append((partial_name, self._value))
+        result = [(partial_name, self._value)]
         if isinstance(self._definition, dict):
             sub_config_dict = self._definition[self._value]
             result.extend(sub_config_dict.values_list)
@@ -148,17 +149,16 @@ class SettingsItem(object):
 
     def validate(self):
         if self._value is None and None not in self._definition:
-            raise ConanException("'%s' value not defined" % self._name)
+            raise ConanException(f"'{self._name}' value not defined")
         if isinstance(self._definition, dict):
             self._definition[self._value].validate()
 
     def possible_values(self):
         if isinstance(self._definition, list):
             return self.values_range.copy()
-        ret = {}
-        for key, value in self._definition.items():
-            ret[key] = value.possible_values()
-        return ret
+        return {
+            key: value.possible_values() for key, value in self._definition.items()
+        }
 
     def rm_safe(self, name):
         """ Iterates all possible subsettings, calling rm_safe() for all of them. If removing
@@ -180,8 +180,7 @@ class Settings(object):
             raise ConanException(f"Invalid settings.yml format: '{name}{val}' is not a dictionary")
         self._name = name  # settings, settings.compiler
         self._parent_value = parent_value  # gcc, x86
-        self._data = {k: SettingsItem(v, "%s.%s" % (name, k))
-                      for k, v in definition.items()}
+        self._data = {k: SettingsItem(v, f"{name}.{k}") for k, v in definition.items()}
         self._frozen = False
 
     def serialize(self):
@@ -207,9 +206,7 @@ class Settings(object):
                 tmp = getattr(tmp, prop, None)
         except ConanException:
             return default
-        if tmp is not None and tmp.value is not None:  # In case of subsettings is None
-            return tmp.value
-        return default
+        return tmp.value if tmp is not None and tmp.value is not None else default
 
     def rm_safe(self, name):
         """ Removes the setting or subsetting from the definition. For example,
@@ -244,7 +241,7 @@ class Settings(object):
         try:
             return Settings(yaml.safe_load(text) or {})
         except (yaml.YAMLError, AttributeError) as ye:
-            raise ConanException("Invalid settings.yml format: {}".format(ye))
+            raise ConanException(f"Invalid settings.yml format: {ye}")
 
     def validate(self):
         for child in self._data.values():
@@ -262,12 +259,12 @@ class Settings(object):
             raise undefined_field(self._name, field, self.fields, self._parent_value)
 
     def __getattr__(self, field):
-        assert field[0] != "_", "ERROR %s" % field
+        assert field[0] != "_", f"ERROR {field}"
         self._check_field(field)
         return self._data[field]
 
     def __delattr__(self, field):
-        assert field[0] != "_", "ERROR %s" % field
+        assert field[0] != "_", f"ERROR {field}"
         self._check_field(field)
         del self._data[field]
 
@@ -332,19 +329,14 @@ class Settings(object):
         compiler.arch = XX
         compiler.arch.speed = YY
         """
-        result = []
-        for (name, value) in self.values_list:
-            # It is important to discard None values, so migrations in settings can be done
-            # without breaking all existing packages SHAs, by adding a first None option
-            # that doesn't change the final sha
-            if value is not None:
-                result.append("%s=%s" % (name, value))
+        result = [
+            f"{name}={value}"
+            for name, value in self.values_list
+            if value is not None
+        ]
         return '\n'.join(result)
 
     def possible_values(self):
         """Check the range of values of the definition of a setting
         """
-        ret = {}
-        for key, element in self._data.items():
-            ret[key] = element.possible_values()
-        return ret
+        return {key: element.possible_values() for key, element in self._data.items()}

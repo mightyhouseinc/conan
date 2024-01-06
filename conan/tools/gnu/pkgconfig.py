@@ -23,7 +23,9 @@ class PkgConfig:
 
     def _parse_output(self, option):
         executable = self._conanfile.conf.get("tools.gnu:pkg_config", default="pkg-config")
-        command = cmd_args_to_string([executable, '--' + option, self._library, '--print-errors'])
+        command = cmd_args_to_string(
+            [executable, f'--{option}', self._library, '--print-errors']
+        )
 
         env = Environment()
         if self._pkg_config_path:
@@ -32,8 +34,7 @@ class PkgConfig:
             # This way we get the environment from ConanFile, from profile (default buildenv)
             output = StringIO()
             self._conanfile.run(command, stdout=output, quiet=True)
-        value = output.getvalue().strip()
-        return value
+        return output.getvalue().strip()
 
     def _get_option(self, option):
         if option not in self._info:
@@ -80,7 +81,7 @@ class PkgConfig:
             variable_names = self._parse_output('print-variables').split()
             self._variables = {}
             for name in variable_names:
-                self._variables[name] = self._parse_output('variable=%s' % name)
+                self._variables[name] = self._parse_output(f'variable={name}')
         return self._variables
 
     def fill_cpp_info(self, cpp_info, is_system=True, system_libs=None):
@@ -93,7 +94,7 @@ class PkgConfig:
 
         """
         if not self.provides:
-            raise ConanException("PkgConfig error, '{}' files not available".format(self._library))
+            raise ConanException(f"PkgConfig error, '{self._library}' files not available")
         self._conanfile.output.verbose(f"PkgConfig fill cpp_info for {self._library}")
         if is_system:
             cpp_info.system_libs = self.libs

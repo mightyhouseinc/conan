@@ -54,8 +54,7 @@ class NMakeToolchain(object):
         cflags.extend(self.extra_cflags)
 
         cxxflags = []
-        cppstd = cppstd_flag(self._conanfile.settings)
-        if cppstd:
+        if cppstd := cppstd_flag(self._conanfile.settings):
             cxxflags.append(cppstd)
         cxxflags.extend(self._conanfile.conf.get("tools.build:cxxflags", default=[], check_type=list))
         cxxflags.extend(self.extra_cxxflags)
@@ -68,8 +67,8 @@ class NMakeToolchain(object):
         defines.extend(self.extra_defines)
 
         return ["/nologo"] + \
-               self._format_options(bt_flags + rt_flags + cflags + cxxflags) + \
-               self._format_defines(defines)
+                   self._format_options(bt_flags + rt_flags + cflags + cxxflags) + \
+                   self._format_defines(defines)
 
     @property
     def _link(self):
@@ -92,10 +91,9 @@ class NMakeToolchain(object):
         # Injection of link flags in _LINK_ env-var:
         # https://learn.microsoft.com/en-us/cpp/build/reference/linking
         env.append("_LINK_", self._link)
-        # Also define some special env-vars which can override special NMake macros:
-        # https://learn.microsoft.com/en-us/cpp/build/reference/special-nmake-macros
-        conf_compilers = self._conanfile.conf.get("tools.build:compiler_executables", default={}, check_type=dict)
-        if conf_compilers:
+        if conf_compilers := self._conanfile.conf.get(
+            "tools.build:compiler_executables", default={}, check_type=dict
+        ):
             compilers_mapping = {
                 "AS": "asm",
                 "CC": "c",

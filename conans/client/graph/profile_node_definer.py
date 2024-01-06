@@ -32,26 +32,24 @@ def initialize_conanfile_profile(conanfile, profile_build, profile_host, base_co
     conanfile.settings_target = None
 
     if is_build_require:
-        if base_context == CONTEXT_BUILD:
-            conanfile.settings_target = settings_build.copy()
-        else:
+        conanfile.settings_target = (
+            settings_build.copy()
+            if base_context == CONTEXT_BUILD
+            else settings_host.copy()
+        )
+    elif base_context == CONTEXT_BUILD:
+        # if parent is first level tool-requires, required by HOST context
+        if parent is None or parent.settings_target is None:
             conanfile.settings_target = settings_host.copy()
-    else:
-        if base_context == CONTEXT_BUILD:
-            # if parent is first level tool-requires, required by HOST context
-            if parent is None or parent.settings_target is None:
-                conanfile.settings_target = settings_host.copy()
-            else:
-                conanfile.settings_target = parent.settings_target.copy()
+        else:
+            conanfile.settings_target = parent.settings_target.copy()
 
 
 def _per_package_settings(conanfile, profile, ref):
     # Prepare the settings for the loaded conanfile
     # Mixing the global settings with the specified for that name if exist
     tmp_settings = profile.processed_settings.copy()
-    package_settings_values = profile.package_settings_values
-
-    if package_settings_values:
+    if package_settings_values := profile.package_settings_values:
         pkg_settings = []
 
         for pattern, settings in package_settings_values.items():
@@ -69,8 +67,9 @@ def _initialize_conanfile(conanfile, profile, settings, ref):
     try:
         settings.constrained(conanfile.settings)
     except Exception as e:
-        raise ConanException("The recipe %s is constraining settings. %s" % (
-            conanfile.display_name, str(e)))
+        raise ConanException(
+            f"The recipe {conanfile.display_name} is constraining settings. {str(e)}"
+        )
     conanfile.settings = settings
     conanfile.settings._frozen = True
     conanfile._conan_buildenv = profile.buildenv

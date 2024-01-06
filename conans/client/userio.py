@@ -28,9 +28,7 @@ def color_enabled(stream):
         # CLICOLOR_FORCE != 0, ANSI colors should be enabled no matter what.
         return True
 
-    if os.getenv("NO_COLOR") is not None:
-        return False
-    return is_terminal(stream)
+    return False if os.getenv("NO_COLOR") is not None else is_terminal(stream)
 
 
 def init_colorama(stream):
@@ -72,16 +70,16 @@ class UserInput(object):
         :param username If username is specified it only request password"""
         self._raise_if_non_interactive()
         if not username:
-            self._out.write("Remote '%s' username: " % remote_name)
+            self._out.write(f"Remote '{remote_name}' username: ")
             username = self.get_username()
 
-        self._out.write('Please enter a password for "%s" account: ' % username)
+        self._out.write(f'Please enter a password for "{username}" account: ')
         try:
             pwd = self.get_password()
         except ConanException:
             raise
         except Exception as e:
-            raise ConanException('Cancelled pass %s' % e)
+            raise ConanException(f'Cancelled pass {e}')
         return username, pwd
 
     def get_username(self):
@@ -104,24 +102,22 @@ class UserInput(object):
         self._raise_if_non_interactive()
 
         if default_value:
-            self._out.write('%s (%s): ' % (msg, default_value))
+            self._out.write(f'{msg} ({default_value}): ')
         else:
-            self._out.write('%s: ' % msg)
+            self._out.write(f'{msg}: ')
         s = self._ins.readline().replace("\n", "")
-        if default_value is not None and s == '':
-            return default_value
-        return s
+        return default_value if default_value is not None and s == '' else s
 
     def request_boolean(self, msg, default_option=None):
         """Request user to input a boolean"""
         ret = None
         while ret is None:
             if default_option is True:
-                s = self.request_string("%s (YES/no)" % msg)
+                s = self.request_string(f"{msg} (YES/no)")
             elif default_option is False:
-                s = self.request_string("%s (NO/yes)" % msg)
+                s = self.request_string(f"{msg} (NO/yes)")
             else:
-                s = self.request_string("%s (yes/no)" % msg)
+                s = self.request_string(f"{msg} (yes/no)")
             if default_option is not None and s == '':
                 return default_option
             if s.lower() in ['yes', 'y']:

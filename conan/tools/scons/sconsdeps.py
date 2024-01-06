@@ -14,7 +14,7 @@ class SConsDeps:
     def ordered_deps(self):
         if self._ordered_deps is None:
             deps = self._conanfile.dependencies.host.topological_sort
-            self._ordered_deps = [dep for dep in reversed(deps.values())]
+            self._ordered_deps = list(reversed(deps.values()))
         return self._ordered_deps
 
     def _get_cpp_info(self):
@@ -45,17 +45,14 @@ class SConsDeps:
         },
         {% if dep_version is not none %}"{{dep_name}}_version" : "{{dep_version}}",{% endif %}
         """)
-        sections = ["conandeps = {\n"]
         all_flags = template.render(dep_name="conandeps", dep_version=None,
                                     info=self._get_cpp_info())
-        sections.append(all_flags)
-
+        sections = ["conandeps = {\n", all_flags]
         # TODO: Add here in 2.0 the "skip": False trait
         host_req = self._conanfile.dependencies.filter({"build": False}).values()
         for dep in host_req:
             dep_flags = template.render(dep_name=dep.ref.name, dep_version=dep.ref.version,
                                         info=dep.cpp_info)
             sections.append(dep_flags)
-        sections.append("}\n")
-        sections.append("Return('conandeps')\n")
+        sections.extend(("}\n", "Return('conandeps')\n"))
         return "\n".join(sections)

@@ -60,11 +60,11 @@ def test_m1(op_system):
                  "m1": profile}, clean_first=True)
     client.run("build . --profile:build=default --profile:host=m1")
     system_name = 'Darwin' if op_system == 'Macos' else 'iOS'
-    assert "CMAKE_SYSTEM_NAME: {}".format(system_name) in client.out
+    assert f"CMAKE_SYSTEM_NAME: {system_name}" in client.out
     assert "CMAKE_SYSTEM_PROCESSOR: arm64" in client.out
     main_path = "./build/Release/main.app/main" if op_system == "iOS" \
         else "./build/Release/main"
-    client.run_command("lipo -info {}".format(main_path))
+    client.run_command(f"lipo -info {main_path}")
     assert "Non-fat file" in client.out
     assert "is architecture: arm64" in client.out
     client.run_command(f"vtool -show-build {main_path}")

@@ -36,10 +36,10 @@ class LocalAPI:
                 path = path_py if os.path.isfile(path_py) else path_txt
 
         if not os.path.isfile(path):  # Must exist
-            raise ConanException("Conanfile not found at %s" % path)
+            raise ConanException(f"Conanfile not found at {path}")
 
         if py and not path.endswith(".py"):
-            raise ConanException("A conanfile.py is needed, " + path + " is not acceptable")
+            raise ConanException(f"A conanfile.py is needed, {path} is not acceptable")
 
         return path
 
@@ -111,7 +111,13 @@ class LocalAPI:
 
     def inspect(self, conanfile_path, remotes, lockfile):
         app = ConanApp(self._conan_api)
-        conanfile = app.loader.load_named(conanfile_path, name=None, version=None,
-                                          user=None, channel=None, remotes=remotes, graph_lock=lockfile)
-        return conanfile
+        return app.loader.load_named(
+            conanfile_path,
+            name=None,
+            version=None,
+            user=None,
+            channel=None,
+            remotes=remotes,
+            graph_lock=lockfile,
+        )
 

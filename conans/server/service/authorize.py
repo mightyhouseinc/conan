@@ -173,9 +173,7 @@ class BasicAuthorizer(Authorizer):
 
     def _check_any_rule_ok(self, username, rules, *args, **kwargs):
         for rule in rules:
-            # raises if don't
-            ret = self._check_rule_ok(username, rule, *args, **kwargs)
-            if ret:  # A rule is applied ok, if not apply keep looking
+            if ret := self._check_rule_ok(username, rule, *args, **kwargs):
                 return True
         if username:
             raise ForbiddenException("Permission denied")
@@ -192,7 +190,7 @@ class BasicAuthorizer(Authorizer):
             raise InternalErrorException("Invalid server configuration. "
                                          "Contact the administrator.")
         authorized_users = [_.strip() for _ in rule[1].split(",")]
-        if len(authorized_users) < 1:
+        if not authorized_users:
             raise InternalErrorException("Invalid server configuration. "
                                          "Contact the administrator.")
 
@@ -200,21 +198,21 @@ class BasicAuthorizer(Authorizer):
         if self._check_ref_apply_for_rule(rule_ref, ref):
             if authorized_users[0] == "*" or username in authorized_users:
                 return True  # Ok, applies and match username
-            else:
-                if username:
-                    if authorized_users[0] == "?":
-                        return True  # Ok, applies and match any authenticated username
-                    else:
-                        raise ForbiddenException("Permission denied")
-                else:
-                    raise AuthenticationException()
+            if not username:
+                raise AuthenticationException()
 
+            if authorized_users[0] == "?":
+                return True  # Ok, applies and match any authenticated username
+            else:
+                raise ForbiddenException("Permission denied")
         return False
 
     def _check_ref_apply_for_rule(self, rule_ref: RecipeReference, ref: RecipeReference):
         """Checks if a conans reference specified in config file applies to current conans
         reference"""
-        return not((rule_ref.name != "*" and rule_ref.name != ref.name) or
-                   (rule_ref.version != "*" and rule_ref.version != ref.version) or
-                   (rule_ref.user != "*" and rule_ref.user != ref.user) or
-                   (rule_ref.channel != "*" and rule_ref.channel != ref.channel))
+        return (
+            rule_ref.name in ["*", ref.name]
+            and rule_ref.version in ["*", ref.version]
+            and rule_ref.user in ["*", ref.user]
+            and rule_ref.channel in ["*", ref.channel]
+        )

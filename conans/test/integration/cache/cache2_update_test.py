@@ -425,10 +425,16 @@ class TestUpdateFlows:
 
         # now we are uploading different revisions with different dates, but the same version
         for minor in range(3):
-            self.client2.save({"conanfile.py": GenConanfile("liba", f"1.2.0").with_build_msg(f"REV{minor}")})
+            self.client2.save(
+                {
+                    "conanfile.py": GenConanfile("liba", "1.2.0").with_build_msg(
+                        f"REV{minor}"
+                    )
+                }
+            )
             self.client2.run("create .")
             self.the_time = 10.0 + minor*10.0
-            self._upload_ref_to_server(f"liba/1.2.0", f"server{minor}", self.client2)
+            self._upload_ref_to_server("liba/1.2.0", f"server{minor}", self.client2)
 
         self.client.save({"conanfile.py": GenConanfile("liba", "1.0.0").with_build_msg("REV0")})
         self.client.run("create .")
@@ -437,4 +443,4 @@ class TestUpdateFlows:
         assert "liba/[>1.0.0]: liba/1.2.0" in self.client.out
         self.client.assert_listed_require({"liba/1.2.0": "Downloaded (server2)"})
         assert f"liba/1.2.0: Retrieving package {NO_SETTINGS_PACKAGE_ID} " \
-               "from remote 'server2' " in self.client.out
+                   "from remote 'server2' " in self.client.out

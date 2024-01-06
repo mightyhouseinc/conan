@@ -108,14 +108,14 @@ def supported_cppstd(conanfile, compiler=None, compiler_version=None):
     if not compiler or not compiler_version:
         raise ConanException("Called supported_cppstd with no compiler or no compiler.version")
 
-    func = {"apple-clang": _apple_clang_supported_cppstd,
-            "gcc": _gcc_supported_cppstd,
-            "msvc": _msvc_supported_cppstd,
-            "clang": _clang_supported_cppstd,
-            "mcst-lcc": _mcst_lcc_supported_cppstd,
-            "qcc": _qcc_supported_cppstd,
-            }.get(compiler)
-    if func:
+    if func := {
+        "apple-clang": _apple_clang_supported_cppstd,
+        "gcc": _gcc_supported_cppstd,
+        "msvc": _msvc_supported_cppstd,
+        "clang": _clang_supported_cppstd,
+        "mcst-lcc": _mcst_lcc_supported_cppstd,
+        "qcc": _qcc_supported_cppstd,
+    }.get(compiler):
         return func(Version(compiler_version))
     return None
 
@@ -146,7 +146,7 @@ def _check_cppstd(conanfile, cppstd, comparator, gnu_extensions):
             return str(_cppstd).replace("gnu", "")
 
         def add_millennium(_cppstd):
-            return "19%s" % _cppstd if _cppstd == "98" else "20%s" % _cppstd
+            return f"19{_cppstd}" if _cppstd == "98" else f"20{_cppstd}"
 
         lhs = add_millennium(extract_cpp_version(lhs))
         rhs = add_millennium(extract_cpp_version(rhs))
@@ -217,10 +217,7 @@ def _msvc_supported_cppstd(version):
         return ["14"]
     if version < "192":  # VS 2017
         return ["14", "17"]
-    if version < "193":
-        return ["14", "17", "20"]
-
-    return ["14", "17", "20", "23"]
+    return ["14", "17", "20"] if version < "193" else ["14", "17", "20", "23"]
 
 
 def _clang_supported_cppstd(version):

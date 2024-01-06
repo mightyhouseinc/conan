@@ -125,14 +125,13 @@ class MSBuildDeps(object):
     def _config_filename(self):
         props = [("Configuration", self.configuration),
                  ("Platform", self.platform)]
-        name = "".join("_%s" % v for _, v in props)
+        name = "".join(f"_{v}" for _, v in props)
         return name.lower()
 
     def _condition(self):
         props = [("Configuration", self.configuration),
                  ("Platform", self.platform)]
-        condition = " And ".join("'$(%s)' == '%s'" % (k, v) for k, v in props)
-        return condition
+        return " And ".join(f"'$({k})' == '{v}'" for k, v in props)
 
     @staticmethod
     def _dep_name(dep, build):
@@ -154,7 +153,7 @@ class MSBuildDeps(object):
 
         def add_valid_ext(libname):
             ext = os.path.splitext(libname)[1]
-            return '%s;' % libname if ext in VALID_LIB_EXTENSIONS else '%s.lib;' % libname
+            return f'{libname};' if ext in VALID_LIB_EXTENSIONS else f'{libname}.lib;'
 
         pkg_placeholder = "$(Conan{}RootFolder)".format(name)
 
@@ -172,7 +171,7 @@ class MSBuildDeps(object):
                 full_path = escape_path(p)
                 if full_path.startswith(root_folder):
                     rel = full_path[len(root_folder)+1:]
-                    full_path = ("%s/%s" % (pkg_placeholder, rel))
+                    full_path = f"{pkg_placeholder}/{rel}"
                 ret.append(full_path)
             return "".join("{};".format(e) for e in ret)
 
@@ -186,7 +185,7 @@ class MSBuildDeps(object):
         libs = "".join([add_valid_ext(lib) for lib in cpp_info.libs])
         # TODO: Missing objects
         system_libs = "".join([add_valid_ext(sys_dep) for sys_dep in cpp_info.system_libs])
-        definitions = "".join("%s;" % d for d in cpp_info.defines)
+        definitions = "".join(f"{d};" for d in cpp_info.defines)
         compiler_flags = " ".join(cpp_info.cxxflags + cpp_info.cflags)
         linker_flags = " ".join(cpp_info.sharedlinkflags + cpp_info.exelinkflags)
 
@@ -235,9 +234,13 @@ class MSBuildDeps(object):
         # Probably also the negation pattern, exclude all not @mycompany/*
         ca_exclude = any(fnmatch.fnmatch(dep_name, p) for p in self.exclude_code_analysis or ())
         template = Template(self._conf_props, trim_blocks=True, lstrip_blocks=True)
-        content_multi = template.render(host_context=not build, name=dep_name, ca_exclude=ca_exclude,
-                                        vars_filename=vars_filename, deps=deps)
-        return content_multi
+        return template.render(
+            host_context=not build,
+            name=dep_name,
+            ca_exclude=ca_exclude,
+            vars_filename=vars_filename,
+            deps=deps,
+        )
 
     @staticmethod
     def _dep_props_file(dep_name, filename, aggregated_filename, condition, content=None):
@@ -297,8 +300,8 @@ class MSBuildDeps(object):
             """)
         for req, dep in direct_deps.items():
             dep_name = self._dep_name(dep, req.build)
-            filename = "conan_%s.props" % dep_name
-            comp_condition = "'$(conan_%s_props_imported)' != 'True'" % dep_name
+            filename = f"conan_{dep_name}.props"
+            comp_condition = f"'$(conan_{dep_name}_props_imported)' != 'True'"
             pkg_aggregated_content = self._dep_props_file("", conandeps_filename, filename,
                                                           condition=comp_condition,
                                                           content=pkg_aggregated_content)
@@ -318,19 +321,22 @@ class MSBuildDeps(object):
         if dep.cpp_info.has_components:
             pkg_aggregated_content = None
             for comp_name, comp_info in dep.cpp_info.components.items():
-                full_comp_name = "{}_{}".format(dep_name, self._get_valid_xml_format(comp_name))
-                vars_filename = "conan_%s_vars%s.props" % (full_comp_name, conf_name)
-                activate_filename = "conan_%s%s.props" % (full_comp_name, conf_name)
-                comp_filename = "conan_%s.props" % full_comp_name
-                pkg_filename = "conan_%s.props" % dep_name
+                full_comp_name = f"{dep_name}_{self._get_valid_xml_format(comp_name)}"
+                vars_filename = f"conan_{full_comp_name}_vars{conf_name}.props"
+                activate_filename = f"conan_{full_comp_name}{conf_name}.props"
+                comp_filename = f"conan_{full_comp_name}.props"
+                pkg_filename = f"conan_{dep_name}.props"
 
                 public_deps = []  # To store the xml dependencies/file names
                 for required_pkg, required_comp in comp_info.parsed_requires():
                     if required_pkg is not None:  # Points to a component of a different package
-                        public_deps.append(required_pkg if required_pkg == required_comp
-                                           else "{}_{}".format(required_pkg, required_comp))
+                        public_deps.append(
+                            required_pkg
+                            if required_pkg == required_comp
+                            else f"{required_pkg}_{required_comp}"
+                        )
                     else:  # Points to a component of same package
-                        public_deps.append("{}_{}".format(dep_name, required_comp))
+                        public_deps.append(f"{dep_name}_{required_comp}")
                 public_deps = [self._get_valid_xml_format(d) for d in public_deps]
                 result[vars_filename] = self._vars_props_file(require, dep, full_comp_name,
                                                               comp_info, build=build)
@@ -338,16 +344,16 @@ class MSBuildDeps(object):
                                                                       public_deps, build=build)
                 result[comp_filename] = self._dep_props_file(full_comp_name, comp_filename,
                                                              activate_filename, condition)
-                comp_condition = "'$(conan_%s_props_imported)' != 'True'" % full_comp_name
+                comp_condition = f"'$(conan_{full_comp_name}_props_imported)' != 'True'"
                 pkg_aggregated_content = self._dep_props_file(dep_name, pkg_filename, comp_filename,
                                                               condition=comp_condition,
                                                               content=pkg_aggregated_content)
                 result[pkg_filename] = pkg_aggregated_content
         else:
             cpp_info = dep.cpp_info
-            vars_filename = "conan_%s_vars%s.props" % (dep_name, conf_name)
-            activate_filename = "conan_%s%s.props" % (dep_name, conf_name)
-            pkg_filename = "conan_%s.props" % dep_name
+            vars_filename = f"conan_{dep_name}_vars{conf_name}.props"
+            activate_filename = f"conan_{dep_name}{conf_name}.props"
+            pkg_filename = f"conan_{dep_name}.props"
             pkg_deps = get_transitive_requires(self._conanfile, dep)
             public_deps = [self._dep_name(d, build) for d in pkg_deps.values()]
 

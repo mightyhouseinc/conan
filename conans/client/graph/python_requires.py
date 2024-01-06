@@ -38,7 +38,7 @@ class PyRequires(object):
         try:
             return self._pyrequires[item]
         except KeyError:
-            raise ConanException("'%s' is not a python_require" % item)
+            raise ConanException(f"'{item}' is not a python_require")
 
     def add_pyrequire(self, py_require):
         key = py_require.ref.name
@@ -46,7 +46,7 @@ class PyRequires(object):
         existing = self._pyrequires.get(key)
         if existing and existing is not py_require:  # if is the same one, can be added.
             # TODO: Better test python_requires conflicts
-            raise ConanException("The python_require '%s' already exists" % key)
+            raise ConanException(f"The python_require '{key}' already exists")
         self._pyrequires[key] = py_require
 
         transitive = getattr(py_require.conanfile, "python_requires", None)
@@ -55,8 +55,9 @@ class PyRequires(object):
         for name, transitive_py_require in transitive.items():
             existing = self._pyrequires.get(name)
             if existing and existing.ref != transitive_py_require.ref:
-                raise ConanException("Conflict in py_requires %s - %s"
-                                     % (existing.ref, transitive_py_require.ref))
+                raise ConanException(
+                    f"Conflict in py_requires {existing.ref} - {transitive_py_require.ref}"
+                )
             self._pyrequires[name] = transitive_py_require
 
 

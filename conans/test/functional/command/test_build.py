@@ -26,8 +26,11 @@ def test_build_different_folders():
         client.run("install ..")
     # Try relative to cwd
     client.run("build . --output-folder build2")
-    assert "Build folder=>%s" % os.path.join(client.current_folder, "build2") in client.out
-    assert "Src folder=>%s" % client.current_folder in client.out
+    assert (
+        f'Build folder=>{os.path.join(client.current_folder, "build2")}'
+        in client.out
+    )
+    assert f"Src folder=>{client.current_folder}" in client.out
 
 
 def test_build_dots_names():

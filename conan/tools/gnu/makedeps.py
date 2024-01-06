@@ -453,8 +453,9 @@ class DepComponentGenerator:
         dirs = {}
         for var, flag in _common_cppinfo_dirs().items():
             cppinfo_value = getattr(self._comp, var)
-            formatted_dirs = _get_formatted_dirs(cppinfo_value, self._root, _makefy(self._name))
-            if formatted_dirs:
+            if formatted_dirs := _get_formatted_dirs(
+                cppinfo_value, self._root, _makefy(self._name)
+            ):
                 self._makeinfo.dirs_append(var)
                 var = var.replace("dirs", "_dirs")
                 formatted_dirs = self._rootify(self._root, self._dep.ref.name, cppinfo_value)
@@ -501,8 +502,7 @@ class DepComponentGenerator:
         dirs = self._get_component_dirs()
         flags = self._get_component_flags()
         comp_content_gen = DepComponentContentGenerator(self._dep, self._name, dirs, flags)
-        comp_content = comp_content_gen.content()
-        return comp_content
+        return comp_content_gen.content()
 
 
 class DepGenerator:
@@ -532,8 +532,9 @@ class DepGenerator:
         dirs = {}
         for var, prefix in _common_cppinfo_dirs().items():
             cppinfo_value = getattr(dependency.cpp_info, var)
-            formatted_dirs = _get_formatted_dirs(cppinfo_value, root, _makefy(dependency.ref.name))
-            if formatted_dirs:
+            if formatted_dirs := _get_formatted_dirs(
+                cppinfo_value, root, _makefy(dependency.ref.name)
+            ):
                 self._info.dirs_append(var)
                 var = var.replace("dirs", "_dirs")
                 dirs[var] = [_conan_prefix_flag(prefix) + it for it in formatted_dirs]

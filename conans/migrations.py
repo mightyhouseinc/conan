@@ -37,8 +37,9 @@ class Migrator(object):
         try:
             save(self.file_version_path, str(self.current_version))
         except Exception as error:
-            raise ConanException("Can't write version file in '{}': {}"
-                                 .format(self.file_version_path, str(error)))
+            raise ConanException(
+                f"Can't write version file in '{self.file_version_path}': {str(error)}"
+            )
 
     def _load_old_version(self):
         try:

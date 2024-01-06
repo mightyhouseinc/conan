@@ -44,17 +44,19 @@ class Autotools(object):
         # http://jingfenghanmax.blogspot.com.es/2010/09/configure-with-host-target-and-build.html
         # https://gcc.gnu.org/onlinedocs/gccint/Configure-Terms.html
         script_folder = os.path.join(self._conanfile.source_folder, build_script_folder) \
-            if build_script_folder else self._conanfile.source_folder
+                if build_script_folder else self._conanfile.source_folder
 
         configure_args = []
         configure_args.extend(args or [])
 
-        self._configure_args = "{} {}".format(self._configure_args, cmd_args_to_string(configure_args))
+        self._configure_args = (
+            f"{self._configure_args} {cmd_args_to_string(configure_args)}"
+        )
 
-        configure_cmd = "{}/configure".format(script_folder)
+        configure_cmd = f"{script_folder}/configure"
         subsystem = deduce_subsystem(self._conanfile, scope="build")
         configure_cmd = subsystem_path(subsystem, configure_cmd)
-        cmd = '"{}" {}'.format(configure_cmd, self._configure_args)
+        cmd = f'"{configure_cmd}" {self._configure_args}'
         self._conanfile.output.info("Calling:\n > %s" % cmd)
         self._conanfile.run(cmd)
 
@@ -76,9 +78,8 @@ class Autotools(object):
         jobs = ""
         jobs_already_passed = re.search(r"(^-j\d+)|(\W-j\d+\s*)", join_arguments([str_args, str_extra_args]))
         if not jobs_already_passed and "nmake" not in make_program.lower():
-            njobs = build_jobs(self._conanfile)
-            if njobs:
-                jobs = "-j{}".format(njobs)
+            if njobs := build_jobs(self._conanfile):
+                jobs = f"-j{njobs}"
         command = join_arguments([make_program, target, str_args, str_extra_args, jobs])
         self._conanfile.run(command)
 
@@ -95,7 +96,10 @@ class Autotools(object):
         args = args if args else []
         str_args = " ".join(args)
         if "DESTDIR=" not in str_args:
-            args.insert(0, "DESTDIR={}".format(unix_path(self._conanfile, self._conanfile.package_folder)))
+            args.insert(
+                0,
+                f"DESTDIR={unix_path(self._conanfile, self._conanfile.package_folder)}",
+            )
         self.make(target=target, args=args)
 
     def autoreconf(self, build_script_folder=None, args=None):
@@ -122,8 +126,5 @@ class Autotools(object):
             sub = self._conanfile.settings.get_safe("os.subsystem")
             if sub in ("cygwin", "msys2", "msys") or compiler == "qcc":
                 return False
-            else:
-                if self._conanfile.win_bash:
-                    return False
-                return True
+            return not self._conanfile.win_bash
         return False

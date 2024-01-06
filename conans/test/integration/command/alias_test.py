@@ -17,7 +17,13 @@ class ConanAliasTest(unittest.TestCase):
     def test_basic(self):
         client = TestClient(default_server_user=True)
         for i in (1, 2):
-            client.save({"conanfile.py": GenConanfile().with_name("hello").with_version("0.%s" % i)})
+            client.save(
+                {
+                    "conanfile.py": GenConanfile()
+                    .with_name("hello")
+                    .with_version(f"0.{i}")
+                }
+            )
             client.run("export . --user=lasote --channel=channel")
 
         client.alias("hello/0.x@lasote/channel",  "hello/0.1@lasote/channel")

@@ -59,12 +59,12 @@ class _LockRequires:
                     package_ids = old_package_ids.update(package_ids)
                 else:
                     package_ids = old_package_ids
-            self._requires[ref] = package_ids
         else:  # Manual addition of something without revision
             existing = {r: r for r in self._requires}.get(ref)
             if existing and existing.revision is not None:
                 raise ConanException(f"Cannot add {ref} to lockfile, already exists")
-            self._requires[ref] = package_ids
+
+        self._requires[ref] = package_ids
 
     def remove(self, pattern):
         ref = RecipeReference.loads(pattern)
@@ -144,12 +144,12 @@ class Lockfile(object):
         if not path:
             raise IOError("Invalid path")
         if not os.path.isfile(path):
-            raise ConanException("Missing lockfile in: %s" % path)
+            raise ConanException(f"Missing lockfile in: {path}")
         content = load(path)
         try:
             return Lockfile.loads(content)
         except Exception as e:
-            raise ConanException("Error parsing lockfile '{}': {}".format(path, e))
+            raise ConanException(f"Error parsing lockfile '{path}': {e}")
 
     @staticmethod
     def loads(content):
@@ -276,11 +276,10 @@ class Lockfile(object):
             return prevs.get(node.package_id)
 
     def _resolve(self, require, locked_refs, resolve_prereleases):
-        version_range = require.version_range
         ref = require.ref
         matches = [r for r in locked_refs if r.name == ref.name and r.user == ref.user and
                    r.channel == ref.channel]
-        if version_range:
+        if version_range := require.version_range:
             for m in matches:
                 if version_range.contains(m.version, resolve_prereleases):
                     require.ref = m
@@ -298,9 +297,8 @@ class Lockfile(object):
                 else:
                     if not self.partial:
                         raise ConanException(f"Requirement '{ref}' not in lockfile")
-            else:
-                if ref not in matches and not self.partial:
-                    raise ConanException(f"Requirement '{repr(ref)}' not in lockfile")
+            elif ref not in matches and not self.partial:
+                raise ConanException(f"Requirement '{repr(ref)}' not in lockfile")
 
     def replace_alias(self, require, alias):
         locked_alias = self._alias.get(alias)

@@ -117,8 +117,7 @@ def graph_build_order_merge(conan_api, parser, subparser, *args):
         install_graph = InstallGraph.load(f)
         result.merge(install_graph)
 
-    install_order_serialized = result.install_build_order()
-    return install_order_serialized
+    return result.install_build_order()
 
 
 @conan_subcommand(formatters={"text": format_graph_info,
@@ -177,7 +176,7 @@ def graph_info(conan_api, parser, subparser, *args):
     print_graph_basic(deps_graph)
     if deps_graph.error:
         ConanOutput().info("Graph error", Color.BRIGHT_RED)
-        ConanOutput().info("    {}".format(deps_graph.error), Color.BRIGHT_RED)
+        ConanOutput().info(f"    {deps_graph.error}", Color.BRIGHT_RED)
     else:
         conan_api.graph.analyze_binaries(deps_graph, args.build, remotes=remotes, update=args.update,
                                          lockfile=lockfile)

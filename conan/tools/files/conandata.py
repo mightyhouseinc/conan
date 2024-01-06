@@ -30,10 +30,7 @@ def update_conandata(conanfile, data):
 
     def recursive_dict_update(d, u):
         for k, v in u.items():
-            if isinstance(v, dict):
-                d[k] = recursive_dict_update(d.get(k, {}), v)
-            else:
-                d[k] = v
+            d[k] = recursive_dict_update(d.get(k, {}), v) if isinstance(v, dict) else v
         return d
 
     recursive_dict_update(conandata, data)

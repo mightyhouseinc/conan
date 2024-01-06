@@ -38,9 +38,12 @@ class PackagesDBTable(BaseDbTable):
             self.columns.pkgid: pref.package_id,
             self.columns.prev: pref.revision,
         }
-        where_expr = ' AND '.join(
-            [f'{k}="{v}" ' if v is not None else f'{k} IS NULL' for k, v in where_dict.items()])
-        return where_expr
+        return ' AND '.join(
+            [
+                f'{k}="{v}" ' if v is not None else f'{k} IS NULL'
+                for k, v in where_dict.items()
+            ]
+        )
 
     def _set_clause(self, pref: PkgReference, path=None, build_id=None):
         set_dict = {
@@ -52,8 +55,9 @@ class PackagesDBTable(BaseDbTable):
             self.columns.timestamp: pref.timestamp,
             self.columns.build_id: build_id,
         }
-        set_expr = ', '.join([f'{k} = "{v}"' for k, v in set_dict.items() if v is not None])
-        return set_expr
+        return ', '.join(
+            [f'{k} = "{v}"' for k, v in set_dict.items() if v is not None]
+        )
 
     def get(self, pref: PkgReference):
         """ Returns the row matching the reference or fails """

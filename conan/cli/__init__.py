@@ -10,5 +10,4 @@ def make_abs_path(path, cwd=None):
     if os.path.isabs(path):
         return path
     cwd = cwd or os.getcwd()
-    abs_path = os.path.normpath(os.path.join(cwd, path))
-    return abs_path
+    return os.path.normpath(os.path.join(cwd, path))

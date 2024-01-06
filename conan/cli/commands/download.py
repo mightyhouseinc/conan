@@ -64,9 +64,9 @@ def download(conan_api: ConanAPI, parser, *args):
     prefs = []
     for ref, recipe_bundle in package_list.refs().items():
         refs.append(ref)
-        for pref, _ in package_list.prefs(ref, recipe_bundle).items():
-            prefs.append(pref)
-
+        prefs.extend(
+            pref for pref, _ in package_list.prefs(ref, recipe_bundle).items()
+        )
     if parallel <= 1:
         for ref in refs:
             conan_api.download.recipe(ref, remote, args.metadata)
@@ -83,7 +83,7 @@ def _download_parallel(parallel, conan_api, refs, prefs, remote):
     thread_pool = ThreadPool(parallel)
     # First the recipes in parallel, we have to make sure the recipes are downloaded before the
     # packages
-    ConanOutput().info("Downloading recipes in %s parallel threads" % parallel)
+    ConanOutput().info(f"Downloading recipes in {parallel} parallel threads")
     thread_pool.starmap(conan_api.download.recipe, [(ref, remote) for ref in refs])
     thread_pool.close()
     thread_pool.join()
@@ -91,7 +91,9 @@ def _download_parallel(parallel, conan_api, refs, prefs, remote):
     # Then the packages in parallel
     if prefs:
         thread_pool = ThreadPool(parallel)
-        ConanOutput().info("Downloading binary packages in %s parallel threads" % parallel)
+        ConanOutput().info(
+            f"Downloading binary packages in {parallel} parallel threads"
+        )
         thread_pool.starmap(conan_api.download.package,  [(pref, remote) for pref in prefs])
         thread_pool.close()
         thread_pool.join()

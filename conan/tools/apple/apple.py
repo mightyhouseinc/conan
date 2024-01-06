@@ -9,7 +9,7 @@ from conan.errors import ConanException
 def is_apple_os(conanfile):
     """returns True if OS is Apple one (Macos, iOS, watchOS, tvOS or visionOS)"""
     os_ = conanfile.settings.get_safe("os")
-    return str(os_) in ['Macos', 'iOS', 'watchOS', 'tvOS', 'visionOS']
+    return str(os_) in {'Macos', 'iOS', 'watchOS', 'tvOS', 'visionOS'}
 
 
 def _to_apple_arch(arch, default=None):
@@ -50,9 +50,9 @@ def get_apple_sdk_fullname(conanfile):
     os_sdk_version = conanfile.settings.get_safe('os.sdk_version') or ""
 
     if os_sdk:
-        return "{}{}".format(os_sdk, os_sdk_version)
+        return f"{os_sdk}{os_sdk_version}"
     elif os_ == "Macos":  # it has only a single value for all the architectures
-        return "{}{}".format("macosx", os_sdk_version)
+        return f"macosx{os_sdk_version}"
     elif is_apple_os(conanfile):
         raise ConanException("Please, specify a suitable value for os.sdk.")
 
@@ -237,7 +237,6 @@ def fix_apple_shared_install_name(conanfile):
         command = f"{otool} -l {binary_file}"
         otool_output = check_output_runner(command).splitlines()
         for count, text in enumerate(otool_output):
-            pass
             if "LC_RPATH" in text:
                 rpath_entry = otool_output[count+2].split("path ")[1].split(" ")[0]
                 entries.append(rpath_entry)

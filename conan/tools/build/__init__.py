@@ -19,10 +19,7 @@ def use_win_mingw(conanfile):
     if os_build == "Windows":
         compiler = conanfile.settings.get_safe("compiler")
         sub = conanfile.settings.get_safe("os.subsystem")
-        if sub in ("cygwin", "msys2", "msys") or compiler == "qcc":
-            return False
-        else:
-            return True
+        return sub not in ("cygwin", "msys2", "msys") and compiler != "qcc"
     return False
 
 
@@ -54,7 +51,7 @@ def _windows_cmd_args_to_string(args):
         arg = arg.replace("<QUOTE>", '"')
         # if argument have spaces, quote it
         if ' ' in arg or '\t' in arg:
-            ret.append('"{}"'.format(arg))
+            ret.append(f'"{arg}"')
         else:
             ret.append(arg)
     return " ".join(ret)
@@ -68,8 +65,11 @@ def load_toolchain_args(generators_folder=None, namespace=None):
     :param namespace: `str` namespace to be prepended to the filename.
     :return: <class 'configparser.SectionProxy'>
     """
-    namespace_name = "{}_{}".format(namespace, CONAN_TOOLCHAIN_ARGS_FILE) if namespace \
+    namespace_name = (
+        f"{namespace}_{CONAN_TOOLCHAIN_ARGS_FILE}"
+        if namespace
         else CONAN_TOOLCHAIN_ARGS_FILE
+    )
     args_file = os.path.join(generators_folder, namespace_name) if generators_folder \
         else namespace_name
     toolchain_config = configparser.ConfigParser()
@@ -95,8 +95,11 @@ def save_toolchain_args(content, generators_folder=None, namespace=None):
     """
     # Let's prune None values
     content_ = {k: v for k, v in content.items() if v is not None}
-    namespace_name = "{}_{}".format(namespace, CONAN_TOOLCHAIN_ARGS_FILE) if namespace \
+    namespace_name = (
+        f"{namespace}_{CONAN_TOOLCHAIN_ARGS_FILE}"
+        if namespace
         else CONAN_TOOLCHAIN_ARGS_FILE
+    )
     args_file = os.path.join(generators_folder, namespace_name) if generators_folder \
         else namespace_name
     toolchain_config = configparser.ConfigParser()

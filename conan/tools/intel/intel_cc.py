@@ -42,15 +42,14 @@ class IntelCC:
         # Let's check the compatibility
         compiler_version = conanfile.settings.get_safe("compiler.version")
         mode = conanfile.settings.get_safe("compiler.mode")
-        if _is_using_intel_oneapi(compiler_version):
-            if mode != "classic" and conanfile.settings.get_safe("os") == "Darwin":
-                raise ConanException(
-                    'macOS* is not supported for the icx/icpx or dpcpp compilers. '
-                    'Use the "classic" mode (icc compiler) instead.')
-        else:
+        if not _is_using_intel_oneapi(compiler_version):
             # Do not support legacy versions
             raise ConanException("You have to use 'intel' compiler which is meant for legacy "
                                  "versions like Intel Parallel Studio XE.")
+        if mode != "classic" and conanfile.settings.get_safe("os") == "Darwin":
+            raise ConanException(
+                'macOS* is not supported for the icx/icpx or dpcpp compilers. '
+                'Use the "classic" mode (icc compiler) instead.')
         # Private properties
         self._conanfile = conanfile
         self._settings = conanfile.settings
@@ -68,7 +67,7 @@ class IntelCC:
             # TODO: Get automatically the classic compiler version
             return "Intel C++ Compiler 19.2"
         elif self._mode == "icx":
-            return "Intel C++ Compiler %s" % (self._compiler_version.split('.')[0])
+            return f"Intel C++ Compiler {self._compiler_version.split('.')[0]}"
         else:  # DPC++ compiler
             return "Intel(R) oneAPI DPC++ Compiler"
 
@@ -80,9 +79,9 @@ class IntelCC:
                 @echo off
                 {}
                 """.format(self.command))
-            filename = self.filename + '.bat'
+            filename = f'{self.filename}.bat'
         else:
-            filename = self.filename + '.sh'
+            filename = f'{self.filename}.sh'
             content = self.command
         from conan.tools.env.environment import create_env_script
         create_env_script(self._conanfile, content, filename, scope)
@@ -95,7 +94,7 @@ class IntelCC:
             raise ConanException("To use Intel oneAPI, specify a [conf] entry "
                                  "'tools.intel:installation_path' containing the path to the "
                                  "installation folder.")
-        self._out.info("Got Intel oneAPI installation folder: %s" % installation_path)
+        self._out.info(f"Got Intel oneAPI installation folder: {installation_path}")
         return installation_path
 
     @property
@@ -130,14 +129,11 @@ class IntelCC:
         command_args = self._conanfile.conf.get("tools.intel:setvars_args", default="")
         system = platform.system()
         svars = "setvars.bat" if system == "Windows" else "setvars.sh"
-        command = '"%s"' % os.path.join(self.installation_path, svars)
-        if system == "Windows":
-            command = "call " + command
-        else:
-            command = ". " + command  # dot is more portable than source
+        command = f'"{os.path.join(self.installation_path, svars)}"'
+        command = f"call {command}" if system == "Windows" else f". {command}"
         # If user has passed custom arguments
         if command_args:
-            command += " %s" % command_args
+            command += f" {command_args}"
             return command
         # Add architecture argument
         if self.arch == "x86_64":
@@ -145,6 +141,6 @@ class IntelCC:
         elif self.arch == "x86":
             command += " ia32"
         else:
-            raise ConanException("don't know how to call %s for %s" % (svars, self.arch))
+            raise ConanException(f"don't know how to call {svars} for {self.arch}")
 
         return command

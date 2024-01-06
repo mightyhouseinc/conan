@@ -49,8 +49,7 @@ class DownloadAPI:
             raise ConanException("The recipe of the specified package "
                                  "doesn't exist, download it first")
 
-        skip_download = app.cache.exists_prev(pref)
-        if skip_download:
+        if skip_download := app.cache.exists_prev(pref):
             output.info(f"Skip package {pref.repr_notime()} download, already in cache")
             if metadata:
                 app.remote_manager.get_package_metadata(pref, remote, metadata)

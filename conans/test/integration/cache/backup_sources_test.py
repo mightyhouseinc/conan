@@ -18,10 +18,10 @@ class TestDownloadCacheBackupSources:
         def custom_download(this, url, filepath, *args, **kwargs):
             if url.startswith("http://myback"):
                 raise NotFoundException()
-            save(filepath, f"Hello, world!")
+            save(filepath, "Hello, world!")
 
         with mock.patch("conans.client.downloaders.file_downloader.FileDownloader.download",
-                        custom_download):
+                            custom_download):
             client = TestClient(default_server_user=True)
             tmp_folder = temp_folder()
             client.save({"global.conf": f"core.sources:download_cache={tmp_folder}\n"
@@ -40,7 +40,7 @@ class TestDownloadCacheBackupSources:
             client.run("source .")
 
             assert 2 == len(os.listdir(os.path.join(tmp_folder, "s")))
-            content = json.loads(load(os.path.join(tmp_folder, "s", sha256 + ".json")))
+            content = json.loads(load(os.path.join(tmp_folder, "s", f"{sha256}.json")))
             assert "http://localhost:5000/myfile.txt" in content["references"]["unknown"]
             assert len(content["references"]["unknown"]) == 1
 
@@ -58,7 +58,7 @@ class TestDownloadCacheBackupSources:
             client.run("source .")
 
             assert 2 == len(os.listdir(os.path.join(tmp_folder, "s")))
-            content = json.loads(load(os.path.join(tmp_folder, "s", sha256 + ".json")))
+            content = json.loads(load(os.path.join(tmp_folder, "s", f"{sha256}.json")))
             assert "http://localhost.mirror:5000/myfile.txt" in content["references"]["unknown"]
             assert "http://localhost:5000/myfile.txt" in content["references"]["unknown"]
             assert len(content["references"]["unknown"]) == 2
@@ -68,14 +68,14 @@ class TestDownloadCacheBackupSources:
             assert "Downloading file" not in client.out
 
             client.run("create .")
-            content = json.loads(load(os.path.join(tmp_folder, "s", sha256 + ".json")))
+            content = json.loads(load(os.path.join(tmp_folder, "s", f"{sha256}.json")))
             assert content["references"]["pkg/1.0"] == \
-                   ["http://localhost.mirror:5000/myfile.txt"]
+                       ["http://localhost.mirror:5000/myfile.txt"]
 
             client.run("create . --user=barbarian --channel=stable")
-            content = json.loads(load(os.path.join(tmp_folder, "s", sha256 + ".json")))
+            content = json.loads(load(os.path.join(tmp_folder, "s", f"{sha256}.json")))
             assert content["references"]["pkg/1.0@barbarian/stable"] == \
-                   ["http://localhost.mirror:5000/myfile.txt"]
+                       ["http://localhost.mirror:5000/myfile.txt"]
 
     @pytest.fixture(autouse=True)
     def _setup(self):
@@ -157,16 +157,16 @@ class TestDownloadCacheBackupSources:
 
         server_contents = os.listdir(http_server_base_folder_backups)
         assert hello_world_sha256 in server_contents
-        assert hello_world_sha256 + ".json" in server_contents
+        assert f"{hello_world_sha256}.json" in server_contents
         # Its only url is excluded, should not be there
         assert mycompanyfile_sha256 not in server_contents
-        assert mycompanyfile_sha256 + ".json" not in server_contents
+        assert f"{mycompanyfile_sha256}.json" not in server_contents
         # It has an excluded url, but another that is not, it should be there
         assert duplicated1_sha256 in server_contents
-        assert duplicated1_sha256 + ".json" in server_contents
+        assert f"{duplicated1_sha256}.json" in server_contents
         # All its urls are excluded, it shoud not be there
         assert duplicated2_sha256 not in server_contents
-        assert duplicated2_sha256 + ".json" not in server_contents
+        assert f"{duplicated2_sha256}.json" not in server_contents
 
         self.client.run("upload * -c -r=default")
         assert "already in server, skipping upload" in self.client.out
@@ -341,7 +341,7 @@ class TestDownloadCacheBackupSources:
         client.save({"conanfile.py": conanfile})
         client.run("create .", assert_error=True)
         assert f"ConanException: The source backup server 'http://localhost:{http_server.port}" \
-               f"/downloader/' needs authentication" in client.out
+                   f"/downloader/' needs authentication" in client.out
         content = {"credentials":
                        [{"url": f"http://localhost:{http_server.port}", "token": "mytoken"}]}
         save(os.path.join(client.cache_folder, "source_credentials.json"), json.dumps(content))
@@ -350,7 +350,7 @@ class TestDownloadCacheBackupSources:
         assert "CONTENT: Hello, world!" in client.out
         client.run("upload * -c -r=default", assert_error=True)
         assert f"The source backup server 'http://localhost:{http_server.port}" \
-               f"/uploader/' needs authentication" in client.out
+                   f"/uploader/' needs authentication" in client.out
         content = {"credentials":
                        [{"url": f"http://localhost:{http_server.port}", "token": "myuploadtoken"}]}
         # Now use the correct UPLOAD token
@@ -359,7 +359,7 @@ class TestDownloadCacheBackupSources:
 
         server_contents = os.listdir(http_server_base_folder_backups)
         assert sha256 in server_contents
-        assert sha256 + ".json" in server_contents
+        assert f"{sha256}.json" in server_contents
 
         client.run("upload * -c -r=default")
         assert "already in server, skipping upload" in client.out
@@ -413,7 +413,7 @@ class TestDownloadCacheBackupSources:
         # to ensure that the first one gets skipped in the list but finds in the second one
         server_contents = os.listdir(http_server_base_folder_backup)
         assert sha256 in server_contents
-        assert sha256 + ".json" in server_contents
+        assert f"{sha256}.json" in server_contents
 
         rmdir(self.download_cache_folder)
         # Remove the "remote" myfile.txt so if it raises
@@ -426,8 +426,10 @@ class TestDownloadCacheBackupSources:
         # And if the first one has them, prefer it before others in the list
         save(os.path.join(http_server_base_folder_downloader, sha256),
              load(os.path.join(http_server_base_folder_backup, sha256)))
-        save(os.path.join(http_server_base_folder_downloader, sha256 + ".json"),
-             load(os.path.join(http_server_base_folder_backup, sha256 + ".json")))
+        save(
+            os.path.join(http_server_base_folder_downloader, f"{sha256}.json"),
+            load(os.path.join(http_server_base_folder_backup, f"{sha256}.json")),
+        )
         rmdir(self.download_cache_folder)
         self.client.run("source .")
         assert f"Sources for {self.file_server.fake_url}/internet/myfile.txt found in remote backup {self.file_server.fake_url}/downloader/" in self.client.out
@@ -468,7 +470,10 @@ class TestDownloadCacheBackupSources:
 
         sha256 = "315f5bdb76d078c43b8ac0064e4a0164612b1fce77c869345bfc94c75894edd3"
         save(os.path.join(http_server_base_folder_backup2, sha256), "Hello, world!")
-        save(os.path.join(http_server_base_folder_backup2, sha256 + ".json"), '{"references": {}}')
+        save(
+            os.path.join(http_server_base_folder_backup2, f"{sha256}.json"),
+            '{"references": {}}',
+        )
 
         conanfile = textwrap.dedent(f"""
            from conan import ConanFile
@@ -502,7 +507,10 @@ class TestDownloadCacheBackupSources:
 
         sha256 = "315f5bdb76d078c43b8ac0064e4a0164612b1fce77c869345bfc94c75894edd3"
         save(os.path.join(http_server_base_folder_backup2, sha256), "Hello, world!")
-        save(os.path.join(http_server_base_folder_backup2, sha256 + ".json"), '{"references": {}}')
+        save(
+            os.path.join(http_server_base_folder_backup2, f"{sha256}.json"),
+            '{"references": {}}',
+        )
 
         @http_server.server.get("/internet/<file>")
         def get_internet_file(file):
@@ -548,7 +556,10 @@ class TestDownloadCacheBackupSources:
         # This file's sha is not the one in the line above
         save(os.path.join(http_server_base_folder_internet, "myfile.txt"), "Bye, world!")
         save(os.path.join(http_server_base_folder_backup2, sha256), "Hello, world!")
-        save(os.path.join(http_server_base_folder_backup2, sha256 + ".json"), '{"references": {}}')
+        save(
+            os.path.join(http_server_base_folder_backup2, f"{sha256}.json"),
+            '{"references": {}}',
+        )
 
         conanfile = textwrap.dedent(f"""
            from conan import ConanFile

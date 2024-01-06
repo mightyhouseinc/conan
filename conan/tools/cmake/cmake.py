@@ -16,16 +16,15 @@ def _cmake_cmd_line_args(conanfile, generator):
     # Arguments related to parallel
     njobs = build_jobs(conanfile)
     if njobs and ("Makefiles" in generator or "Ninja" in generator) and "NMake" not in generator:
-        args.append("-j{}".format(njobs))
+        args.append(f"-j{njobs}")
 
     maxcpucount = conanfile.conf.get("tools.microsoft.msbuild:max_cpu_count", check_type=int)
     if maxcpucount and "Visual Studio" in generator:
-        args.append("/m:{}".format(njobs))
+        args.append(f"/m:{njobs}")
 
     # Arguments for verbosity
     if "Visual Studio" in generator:
-        verbosity = msbuild_verbosity_cmd_line_arg(conanfile)
-        if verbosity:
+        if verbosity := msbuild_verbosity_cmd_line_arg(conanfile):
             args.append(verbosity)
 
     return args
@@ -89,7 +88,7 @@ class CMake(object):
 
         arg_list = [self._cmake_program]
         if self._generator:
-            arg_list.append('-G "{}"'.format(self._generator))
+            arg_list.append(f'-G "{self._generator}"')
         if self._toolchain_file:
             if os.path.isabs(self._toolchain_file):
                 toolpath = self._toolchain_file
@@ -98,14 +97,14 @@ class CMake(object):
             arg_list.append('-DCMAKE_TOOLCHAIN_FILE="{}"'.format(toolpath.replace("\\", "/")))
         if self._conanfile.package_folder:
             pkg_folder = self._conanfile.package_folder.replace("\\", "/")
-            arg_list.append('-DCMAKE_INSTALL_PREFIX="{}"'.format(pkg_folder))
+            arg_list.append(f'-DCMAKE_INSTALL_PREFIX="{pkg_folder}"')
 
         if not variables:
             variables = {}
         self._cache_variables.update(variables)
 
-        arg_list.extend(['-D{}="{}"'.format(k, v) for k, v in self._cache_variables.items()])
-        arg_list.append('"{}"'.format(cmakelist_folder))
+        arg_list.extend([f'-D{k}="{v}"' for k, v in self._cache_variables.items()])
+        arg_list.append(f'"{cmakelist_folder}"')
 
         if not cli_args or ("--log-level" not in cli_args and "--loglevel" not in cli_args):
             arg_list.extend(self._cmake_log_levels_args)
@@ -128,7 +127,7 @@ class CMake(object):
         bt = build_type or self._conanfile.settings.get_safe("build_type")
         if not bt:
             raise ConanException("build_type setting should be defined.")
-        build_config = "--config {}".format(bt) if bt and is_multi else ""
+        build_config = f"--config {bt}" if bt and is_multi else ""
 
         args = []
         if target is not None:
@@ -147,9 +146,9 @@ class CMake(object):
         if cmd_line_args:
             args += ['--'] + cmd_line_args
 
-        arg_list = ['"{}"'.format(bf), build_config, cmd_args_to_string(args)]
+        arg_list = [f'"{bf}"', build_config, cmd_args_to_string(args)]
         arg_list = " ".join(filter(None, arg_list))
-        command = "%s --build %s" % (self._cmake_program, arg_list)
+        command = f"{self._cmake_program} --build {arg_list}"
         self._conanfile.run(command, env=env, stdout=stdout, stderr=stderr)
 
     def build(self, build_type=None, target=None, cli_args=None, build_tool_args=None,
@@ -195,17 +194,18 @@ class CMake(object):
         if not bt:
             raise ConanException("build_type setting should be defined.")
         is_multi = is_multi_configuration(self._generator)
-        build_config = "--config {}".format(bt) if bt and is_multi else ""
+        build_config = f"--config {bt}" if bt and is_multi else ""
 
         pkg_folder = '"{}"'.format(self._conanfile.package_folder.replace("\\", "/"))
-        build_folder = '"{}"'.format(self._conanfile.build_folder)
+        build_folder = f'"{self._conanfile.build_folder}"'
         arg_list = ["--install", build_folder, build_config, "--prefix", pkg_folder]
         if component:
             arg_list.extend(["--component", component])
         arg_list.extend(self._compilation_verbosity_arg)
 
-        do_strip = self._conanfile.conf.get("tools.cmake:install_strip", check_type=bool)
-        if do_strip:
+        if do_strip := self._conanfile.conf.get(
+            "tools.cmake:install_strip", check_type=bool
+        ):
             arg_list.append("--strip")
 
         if cli_args:
@@ -214,7 +214,7 @@ class CMake(object):
             arg_list.extend(cli_args)
 
         arg_list = " ".join(filter(None, arg_list))
-        command = "%s %s" % (self._cmake_program, arg_list)
+        command = f"{self._cmake_program} {arg_list}"
         self._conanfile.run(command, stdout=stdout, stderr=stderr)
 
     def test(self, build_type=None, target=None, cli_args=None, build_tool_args=None, env="",
@@ -262,12 +262,12 @@ class CMake(object):
         is_multi = is_multi_configuration(self._generator)
         if bt and is_multi:
             arg_list.append(f"--build-config {bt}")
-        njobs = build_jobs(self._conanfile)
-        if njobs:
+        if njobs := build_jobs(self._conanfile):
             arg_list.append(f"--parallel {njobs}")
 
-        verbosity = self._conanfile.conf.get("tools.build:verbosity", choices=("quiet", "verbose"))
-        if verbosity:
+        if verbosity := self._conanfile.conf.get(
+            "tools.build:verbosity", choices=("quiet", "verbose")
+        ):
             arg_list.append(f"--{verbosity}")
 
         arg_list.extend(cli_args or [])
@@ -297,4 +297,4 @@ class CMake(object):
         log_level = self._conanfile.conf.get("tools.build:verbosity", choices=("quiet", "verbose"))
         if log_level == "quiet":
             log_level = "error"
-        return ["--loglevel=" + log_level.upper()] if log_level is not None else []
+        return [f"--loglevel={log_level.upper()}"] if log_level is not None else []

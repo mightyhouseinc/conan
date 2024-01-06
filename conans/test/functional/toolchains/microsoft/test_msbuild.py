@@ -451,8 +451,8 @@ class TestWin:
             """.format(vs_version=ide_version))
         client.save({"myprofile": profile})
         # Build the profile according to the settings provided
-        settings_h = " ".join('-s:h %s="%s"' % (k, v) for k, v in settings if v)
-        settings_b = " ".join('-s:b %s="%s"' % (k, v) for k, v in settings if v)
+        settings_h = " ".join(f'-s:h {k}="{v}"' for k, v in settings if v)
+        settings_b = " ".join(f'-s:b {k}="{v}"' for k, v in settings if v)
 
         client.run("new cmake_lib -d name=hello -d version=0.1")
         client.run(f"create . {settings_h} -c tools.microsoft.msbuild:vs_version={ide_version} -c tools.build:verbosity=verbose -c tools.compilation:verbosity=verbose")
@@ -469,7 +469,7 @@ class TestWin:
                     clean_first=True)
 
         # Run the configure corresponding to this test case
-        client.run("build . %s %s -pr:h=myprofile " % (settings_h, settings_b))
+        client.run(f"build . {settings_h} {settings_b} -pr:h=myprofile ")
         assert "conanfile.py: MSBuildToolchain created conantoolchain_release_win32.props" in client.out
         assert f"conanvcvars.bat: Activating environment Visual Studio {ide_version}" in client.out
         assert "[vcvarsall.bat] Environment initialized for: 'x86'" in client.out
@@ -483,7 +483,7 @@ class TestWin:
                        "DEFINITIONS_CONFIG": 'Release',
                        "DEFINITIONS_CONFIG2": 'Release',
                        "DEFINITIONS_CONFIG_INT": "456"})
-        static_runtime = True if runtime == "static" or "MT" in runtime else False
+        static_runtime = runtime == "static" or "MT" in runtime
         check_vs_runtime("Release/MyApp.exe", client, ide_version, build_type="Release",
                          static_runtime=static_runtime)
 
@@ -498,7 +498,7 @@ class TestWin:
                     ("arch",  "x86_64")]
 
         # Build the profile according to the settings provided
-        settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings if v)
+        settings = " ".join(f'-s {k}="{v}"' for k, v in settings if v)
 
         client.run("new cmake_lib -d name=hello -d version=0.1")
         client.run("create . %s -tf=\"\"" % (settings,))
@@ -511,7 +511,7 @@ class TestWin:
                     clean_first=True)
 
         # Run the configure corresponding to this test case
-        client.run("build . %s" % (settings, ))
+        client.run(f"build . {settings}")
         assert "conanfile.py: MSBuildToolchain created conantoolchain_debug_x64.props" in client.out
         assert f"conanvcvars.bat: Activating environment Visual Studio 16" in client.out
         assert "[vcvarsall.bat] Environment initialized for: 'x64'" in client.out
@@ -529,7 +529,6 @@ class TestWin:
     @pytest.mark.tool("cmake")
     @pytest.mark.tool("visual_studio", "16")
     def test_toolchain_win_multi(self):
-        ide_version = "16"
         client = TestClient(path_with_spaces=False)
 
         settings = [("compiler", "msvc"),
@@ -537,7 +536,7 @@ class TestWin:
                     ("compiler.cppstd", "17"),
                     ("compiler.runtime", "static")]
 
-        settings = " ".join('-s %s="%s"' % (k, v) for k, v in settings if v)
+        settings = " ".join(f'-s {k}="{v}"' for k, v in settings if v)
         client.run("new cmake_lib -d name=hello -d version=0.1")
         configs = [("Release", "x86", True), ("Release", "x86_64", True),
                    ("Debug", "x86", False), ("Debug", "x86_64", False)]
@@ -547,8 +546,9 @@ class TestWin:
             build_test_folder = os.path.join(client.current_folder, "test_package", "build")
             rmdir(build_test_folder)
             runtime = "static"
-            client.run("create . --name=hello --version=0.1 %s -s build_type=%s -s arch=%s -s compiler.runtime=%s "
-                       " -o hello/*:shared=%s" % (settings, build_type, arch, runtime, shared))
+            client.run(
+                f"create . --name=hello --version=0.1 {settings} -s build_type={build_type} -s arch={arch} -s compiler.runtime={runtime}  -o hello/*:shared={shared}"
+            )
 
         # Prepare the actual consumer package
         client.save({"conanfile.py": self.conanfile,
@@ -557,12 +557,14 @@ class TestWin:
                      "MyApp/MyApp.cpp": self.app},
                     clean_first=True)
 
+        runtime = "static"
         # Run the configure corresponding to this test case
         for build_type, arch, shared in configs:
-            runtime = "static"
-            client.run("install . %s -s build_type=%s -s arch=%s -s compiler.runtime=%s"
-                       " -o hello/*:shared=%s" % (settings, build_type, arch, runtime, shared))
+            client.run(
+                f"install . {settings} -s build_type={build_type} -s arch={arch} -s compiler.runtime={runtime} -o hello/*:shared={shared}"
+            )
 
+        ide_version = "16"
         vs_path = vs_installation_path(ide_version)
         vcvars_path = os.path.join(vs_path, "VC/Auxiliary/Build/vcvarsall.bat")
 
@@ -590,7 +592,7 @@ class TestWin:
             else:
                 command_str = "x64\\%s\\MyApp.exe" % configuration
             vcvars = vcvars_command(version=ide_version, architecture="amd64")
-            cmd = ('%s && dumpbin /dependents "%s"' % (vcvars, command_str))
+            cmd = f'{vcvars} && dumpbin /dependents "{command_str}"'
             client.run_command(cmd)
             if shared:
                 assert "hello.dll" in client.out

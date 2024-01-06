@@ -23,12 +23,17 @@ class TestProfile(unittest.TestCase):
 
     def test_list(self):
         client = TestClient()
-        profiles = ["default", "profile1", "profile2", "profile3",
-                    "nested" + os.path.sep + "profile4",
-                    "nested" + os.path.sep + "two" + os.path.sep + "profile5",
-                    "nested" + os.path.sep + "profile6"]
+        profiles = [
+            "default",
+            "profile1",
+            "profile2",
+            "profile3",
+            f"nested{os.path.sep}profile4",
+            f"nested{os.path.sep}two{os.path.sep}profile5",
+            f"nested{os.path.sep}profile6",
+        ]
         if platform.system() != "Windows":
-            profiles.append("symlink_me" + os.path.sep + "profile7")
+            profiles.append(f"symlink_me{os.path.sep}profile7")
         for profile in profiles:
             save(os.path.join(client.cache.profiles_path, profile), "")
 
@@ -36,7 +41,7 @@ class TestProfile(unittest.TestCase):
             os.symlink(os.path.join(client.cache.profiles_path, 'symlink_me'),
                        os.path.join(client.cache.profiles_path, 'link'))
             # profile7 will be shown twice because it is symlinked.
-            profiles.append("link" + os.path.sep + "profile7")
+            profiles.append(f"link{os.path.sep}profile7")
 
         # Make sure local folder doesn't interact with profiles
         os.mkdir(os.path.join(client.current_folder, "profile3"))

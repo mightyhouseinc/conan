@@ -15,17 +15,17 @@ class ConfigTemplate(CMakeDepsFileTemplate):
     @property
     def filename(self):
         if self.generating_module:
-            return "Find{}.cmake".format(self.file_name)
+            return f"Find{self.file_name}.cmake"
+        if self.file_name == self.file_name.lower():
+            return f"{self.file_name}-config.cmake"
         else:
-            if self.file_name == self.file_name.lower():
-                return "{}-config.cmake".format(self.file_name)
-            else:
-                return "{}Config.cmake".format(self.file_name)
+            return f"{self.file_name}Config.cmake"
 
     @property
     def context(self):
-        targets_include = "" if not self.generating_module else "module-"
-        targets_include += "{}Targets.cmake".format(self.file_name)
+        targets_include = (
+            "" if not self.generating_module else "module-"
+        ) + f"{self.file_name}Targets.cmake"
         return {"is_module": self.generating_module,
                 "version": self.conanfile.ref.version,
                 "file_name": self.file_name,

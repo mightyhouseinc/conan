@@ -114,7 +114,7 @@ class PackagePreparator:
         for f in (EXPORT_TGZ_NAME, EXPORT_SOURCES_TGZ_NAME):
             tgz_path = os.path.join(download_export_folder, f)
             if is_dirty(tgz_path):
-                output.warning("Removing %s, marked as dirty" % f)
+                output.warning(f"Removing {f}, marked as dirty")
                 os.remove(tgz_path)
                 clean_dirty(tgz_path)
 
@@ -122,7 +122,7 @@ class PackagePreparator:
         files, symlinked_folders = gather_files(export_folder)
         files.update(symlinked_folders)
         if CONANFILE not in files or CONAN_MANIFEST not in files:
-            raise ConanException("Cannot upload corrupted recipe '%s'" % str(ref))
+            raise ConanException(f"Cannot upload corrupted recipe '{str(ref)}'")
         export_src_folder = layout.export_sources()
         src_files, src_symlinked_folders = gather_files(export_src_folder)
         src_files.update(src_symlinked_folders)
@@ -168,7 +168,7 @@ class PackagePreparator:
         download_pkg_folder = layout.download_package()
         package_tgz = os.path.join(download_pkg_folder, PACKAGE_TGZ_NAME)
         if is_dirty(package_tgz):
-            output.warning("Removing %s, marked as dirty" % PACKAGE_TGZ_NAME)
+            output.warning(f"Removing {PACKAGE_TGZ_NAME}, marked as dirty")
             os.remove(package_tgz)
             clean_dirty(package_tgz)
 
@@ -179,7 +179,7 @@ class PackagePreparator:
         files.update(symlinked_folders)
 
         if CONANINFO not in files or CONAN_MANIFEST not in files:
-            raise ConanException("Cannot upload corrupted package '%s'" % str(pref))
+            raise ConanException(f"Cannot upload corrupted package '{str(pref)}'")
 
         # Do a copy so the location of CONANINFO and MANIFEST is the "download" folder one
         mkdir(download_pkg_folder)
@@ -192,7 +192,7 @@ class PackagePreparator:
         files.pop(CONAN_MANIFEST)
 
         if not os.path.isfile(package_tgz):
-            tgz_files = {f: path for f, path in files.items()}
+            tgz_files = dict(files.items())
             compresslevel = self._global_conf.get("core.gzip:compresslevel", check_type=int)
             tgz_path = compress_files(tgz_files, PACKAGE_TGZ_NAME, download_pkg_folder,
                                       compresslevel=compresslevel, ref=pref)

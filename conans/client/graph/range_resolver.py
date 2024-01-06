@@ -78,14 +78,14 @@ class RangeResolver:
         update_candidates = []
         for remote in remotes:
             remote_results = self._search_remote_recipes(remote, search_ref)
-            resolved_version = self._resolve_version(version_range, remote_results,
-                                                     self._resolve_prereleases)
-            if resolved_version:
+            if resolved_version := self._resolve_version(
+                version_range, remote_results, self._resolve_prereleases
+            ):
                 if not update:
                     return resolved_version  # Return first valid occurrence in first remote
                 else:
                     update_candidates.append(resolved_version)
-        if len(update_candidates) > 0:  # pick latest from already resolved candidates
+        if update_candidates:  # pick latest from already resolved candidates
             resolved_version = self._resolve_version(version_range, update_candidates,
                                                      self._resolve_prereleases)
             return resolved_version

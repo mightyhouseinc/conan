@@ -260,7 +260,7 @@ class TestInfoRevisions:
         ref = RecipeReference.loads("lib/1.0@conan/testing")
 
         client.create(ref)
-        client.run("graph info --requires={}".format(ref))
+        client.run(f"graph info --requires={ref}")
         revision = client.recipe_revision(ref)
         assert f"ref: lib/1.0@conan/testing#{revision}" in client.out
 
@@ -286,9 +286,9 @@ class TestInfoTestPackage:
         client.save({"conanfile.py": conanfile})
 
         for args in ["", " --build=*"]:
-            client.run("graph info . " + args)
+            client.run(f"graph info . {args}")
             assert "AttributeError: 'HelloConan' object has no attribute 'tested_reference_str'"\
-                   not in client.out
+                       not in client.out
 
 
 class TestDeployers:

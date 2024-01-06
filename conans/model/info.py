@@ -13,10 +13,7 @@ class _VersionRepr:
         self._version = version
 
     def stable(self):
-        if self._version.major == 0:
-            return str(self._version)
-        else:
-            return self.major()
+        return str(self._version) if self._version.major == 0 else self.major()
 
     def major(self):
         if not isinstance(self._version.major.value, int):
@@ -29,9 +26,7 @@ class _VersionRepr:
 
         v0 = str(self._version.major)
         v1 = str(self._version.minor) if self._version.minor is not None else "0"
-        if fill:
-            return ".".join([v0, v1, 'Z'])
-        return ".".join([v0, v1])
+        return ".".join([v0, v1, 'Z']) if fill else ".".join([v0, v1])
 
     def patch(self):
         if not isinstance(self._version.major.value, int):
@@ -51,7 +46,7 @@ class _VersionRepr:
         v2 = str(self._version.patch) if self._version.patch is not None else "0"
         v = ".".join([v0, v1, v2])
         if self._version.pre is not None:
-            v += "-%s" % self._version.pre
+            v += f"-{self._version.pre}"
         return v
 
     @property
@@ -70,7 +65,9 @@ class RequirementInfo:
         try:
             func_package_id_mode = getattr(self, default_package_id_mode)
         except AttributeError:
-            raise ConanException("'%s' is not a known package_id_mode" % default_package_id_mode)
+            raise ConanException(
+                f"'{default_package_id_mode}' is not a known package_id_mode"
+            )
         else:
             func_package_id_mode()
 
@@ -186,8 +183,7 @@ class RequirementsInfo(UserRequirementsDict):
     def dumps(self):
         result = []
         for req_info in self._data.values():
-            dumped = req_info.dumps()
-            if dumped:
+            if dumped := req_info.dumps():
                 result.append(dumped)
         return "\n".join(sorted(result))
 
@@ -336,47 +332,32 @@ class ConanInfo:
             `"[settings]\nos=Windows\n[options]\nuse_Qt=True"`
         """
         result = []
-        settings_dumps = self.settings.dumps()
-        if settings_dumps:
-            result.append("[settings]")
-            result.append(settings_dumps)
+        if settings_dumps := self.settings.dumps():
+            result.extend(("[settings]", settings_dumps))
         if self.settings_target:
-            settings_target_dumps = self.settings_target.dumps()
-            if settings_target_dumps:
-                result.append("[settings_target]")
-                result.append(settings_target_dumps)
-        options_dumps = self.options.dumps()
-        if options_dumps:
-            result.append("[options]")
-            result.append(options_dumps)
-        requires_dumps = self.requires.dumps()
-        if requires_dumps:
-            result.append("[requires]")
-            result.append(requires_dumps)
+            if settings_target_dumps := self.settings_target.dumps():
+                result.extend(("[settings_target]", settings_target_dumps))
+        if options_dumps := self.options.dumps():
+            result.extend(("[options]", options_dumps))
+        if requires_dumps := self.requires.dumps():
+            result.extend(("[requires]", requires_dumps))
         if self.python_requires:
-            python_reqs_dumps = self.python_requires.dumps()
-            if python_reqs_dumps:
-                result.append("[python_requires]")
-                result.append(python_reqs_dumps)
+            if python_reqs_dumps := self.python_requires.dumps():
+                result.extend(("[python_requires]", python_reqs_dumps))
         if self.build_requires:
-            build_requires_dumps = self.build_requires.dumps()
-            if build_requires_dumps:
-                result.append("[build_requires]")
-                result.append(build_requires_dumps)
+            if build_requires_dumps := self.build_requires.dumps():
+                result.extend(("[build_requires]", build_requires_dumps))
         if self.conf:
-            # TODO: Think about the serialization of Conf, not 100% sure if dumps() is the best
-            result.append("[conf]")
-            result.append(self.conf.dumps())
+            result.extend(("[conf]", self.conf.dumps()))
         result.append("")  # Append endline so file ends with LF
         return '\n'.join(result)
 
     def dump_diff(self, compatible):
         self_dump = self.dumps()
         compatible_dump = compatible.dumps()
-        result = []
-        for line in compatible_dump.splitlines():
-            if line not in self_dump:
-                result.append(line)
+        result = [
+            line for line in compatible_dump.splitlines() if line not in self_dump
+        ]
         return ', '.join(result)
 
     def package_id(self):
@@ -386,8 +367,7 @@ class ConanInfo:
         :return: `str` the `package_id`, e.g., `"040ce2bd0189e377b2d15eb7246a4274d1c63317"`
         """
         text = self.dumps()
-        package_id = sha1(text.encode())
-        return package_id
+        return sha1(text.encode())
 
     def clear(self):
         self.settings.clear()

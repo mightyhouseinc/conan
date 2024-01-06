@@ -46,10 +46,13 @@ def test_layout_in_cache(conanfile, build_type, arch):
     client = TurboTestClient()
 
     libarch = subfolders_arch.get(arch)
-    libpath = "{}{}".format(libarch + "/" if libarch else "", build_type)
+    libpath = f'{f"{libarch}/" if libarch else ""}{build_type}'
     ref = RecipeReference.loads("lib/1.0")
-    pref = client.create(ref, args="-s arch={} -s build_type={}".format(arch, build_type),
-                         conanfile=conanfile.format(libpath=libpath))
+    pref = client.create(
+        ref,
+        args=f"-s arch={arch} -s build_type={build_type}",
+        conanfile=conanfile.format(libpath=libpath),
+    )
     bf = client.cache.pkg_layout(pref).build()
     pf = client.cache.pkg_layout(pref).package()
 
@@ -69,14 +72,17 @@ def test_layout_with_local_methods(conanfile, build_type, arch):
         """
     client = TestClient()
     libarch = subfolders_arch.get(arch)
-    libpath = "{}{}".format(libarch + "/" if libarch else "", build_type)
+    libpath = f'{f"{libarch}/" if libarch else ""}{build_type}'
     client.save({"conanfile.py": conanfile.format(libpath=libpath)})
-    client.run("install . --name=lib --version=1.0 -s build_type={} -s arch={}".format(build_type, arch))
+    client.run(
+        f"install . --name=lib --version=1.0 -s build_type={build_type} -s arch={arch}"
+    )
     client.run("source .")
     # Check the source folder (release)
     assert os.path.exists(os.path.join(client.current_folder, "include", "myheader.h"))
-    client.run("build . --name=lib --version=1.0 -s build_type={} -s arch={}".format(build_type,
-                                                                                     arch))
+    client.run(
+        f"build . --name=lib --version=1.0 -s build_type={build_type} -s arch={arch}"
+    )
     # Check the build folder (release)
     assert os.path.exists(os.path.join(os.path.join(client.current_folder, libpath), "mylib.lib"))
 

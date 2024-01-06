@@ -53,12 +53,12 @@ class InstallAPI:
 
         if conanfile.info is not None and conanfile.info.invalid:
             binary, reason = "Invalid", conanfile.info.invalid
-            msg = "{}: Invalid ID: {}: {}".format(conanfile, binary, reason)
+            msg = f"{conanfile}: Invalid ID: {binary}: {reason}"
             raise ConanInvalidConfiguration(msg)
 
         if root_node.cant_build and root_node.should_build:
             binary, reason = "Cannot build for this configuration", root_node.cant_build
-            msg = "{}: {}: {}".format(conanfile, binary, reason)
+            msg = f"{conanfile}: {binary}: {reason}"
             raise ConanInvalidConfiguration(msg)
 
         conanfile.folders.set_base_folders(source_folder, output_folder)

@@ -117,11 +117,9 @@ class BinaryCompatibility:
         if compatibles:
             for elem in compatibles:
                 compat_info = conanfile.original_info.clone()
-                settings = elem.get("settings")
-                if settings:
+                if settings := elem.get("settings"):
                     compat_info.settings.update_values(settings)
-                options = elem.get("options")
-                if options:
+                if options := elem.get("options"):
                     compat_info.options.update(options_values=OrderedDict(options))
                 result.append(compat_info)
                 settings_target = elem.get("settings_target")

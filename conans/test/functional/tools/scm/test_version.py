@@ -24,9 +24,9 @@ def test_version():
         """)
     c.save({"conanfile.py": conanfile})
     settings = "-s compiler=gcc -s compiler.libcxx=libstdc++11"
-    c.run("create . {} -s compiler.version=11".format(settings))
+    c.run(f"create . {settings} -s compiler.version=11")
     assert "The major of 1.2.3 is 1" in c.out
     assert "The minor of 1.2.3 is 2" in c.out
     assert "The patch of 1.2.3 is 3" in c.out
 
-    c.run("create . {} -s compiler.version=9".format(settings), assert_error=True)
+    c.run(f"create . {settings} -s compiler.version=9", assert_error=True)

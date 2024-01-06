@@ -18,19 +18,24 @@ app_name = "Release/my_app.exe" if platform.system() == "Windows" else "my_app"
 def test_exports_source_with_src_subfolder(no_copy_source):
     """If we have the sources in a subfolder, specifying it in the self.folders.source will
     work both locally (conan build) or in the cache (exporting the sources)"""
-    conan_file = GenConanfile() \
-        .with_name("app").with_version("1.0") \
-        .with_settings("os", "arch", "build_type", "compiler") \
-        .with_exports_sources("my_src/*")\
-        .with_cmake_build()\
-        .with_class_attribute("no_copy_source={}".format(no_copy_source))
+    conan_file = (
+        GenConanfile()
+        .with_name("app")
+        .with_version("1.0")
+        .with_settings("os", "arch", "build_type", "compiler")
+        .with_exports_sources("my_src/*")
+        .with_cmake_build()
+        .with_class_attribute(f"no_copy_source={no_copy_source}")
+    )
 
-    conan_file = str(conan_file)
-    conan_file += """
+    conan_file = (
+        str(conan_file)
+        + """
     def layout(self):
         self.folders.source = "my_src"
         self.folders.build = str(self.settings.build_type)
     """
+    )
     cmake = gen_cmakelists(appname="my_app", appsources=["main.cpp"])
     app = gen_function_cpp(name="main")
 
@@ -53,15 +58,16 @@ def test_exports():
         .with_exports("*.py") \
         .with_import("from my_tools import FOO")
 
-    conan_file = str(conan_file)
-    conan_file += """
+    conan_file = (
+        str(conan_file)
+        + """
     def layout(self):
         self.folders.source = "my_src"
     def build(self):
         # This FOO comes from the my_tools.py
         self.output.warning("FOO: {}".format(FOO))
     """
-
+    )
     client = TestClient()
     client.save({"conanfile.py": conan_file,
                  "my_tools.py": "FOO=1"})
@@ -82,11 +88,13 @@ def test_exports_source_without_subfolder():
         .with_exports_sources("CMakeLists.txt", "my_src/*")\
         .with_cmake_build()
 
-    conan_file = str(conan_file)
-    conan_file += """
+    conan_file = (
+        str(conan_file)
+        + """
     def layout(self):
         self.folders.build = str(self.settings.build_type)
     """
+    )
     cmake = gen_cmakelists(appname="my_app", appsources=["my_src/main.cpp"])
     app = gen_function_cpp(name="main")
 

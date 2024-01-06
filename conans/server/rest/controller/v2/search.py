@@ -19,7 +19,7 @@ class SearchControllerV2(object):
             pattern = request.params.get("q", None)
             ignore_case = request.params.get("ignorecase", True)
             if isinstance(ignore_case, str):
-                ignore_case = False if 'false' == ignore_case.lower() else True
+                ignore_case = 'false' != ignore_case.lower()
             search_service = SearchService(app.authorizer, app.server_store, auth_user)
             references = [repr(ref) for ref in search_service.search(pattern, ignore_case)]
             return {"results": references}

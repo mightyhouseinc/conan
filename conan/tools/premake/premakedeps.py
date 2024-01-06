@@ -147,7 +147,7 @@ class PremakeDeps(object):
     def _config_suffix(self):
         props = [("Configuration", self.configuration),
                  ("Platform", self.architecture)]
-        name = "".join("_%s" % v for _, v in props)
+        name = "".join(f"_{v}" for _, v in props)
         return name.lower()
 
     def _output_lua_file(self, filename, content):
@@ -193,8 +193,8 @@ class PremakeDeps(object):
 
         # Merge into one list
         full_req = list(host_req.items()) \
-                   + list(test_req.items()) \
-                   + list(build_req.items())
+                       + list(test_req.items()) \
+                       + list(build_req.items())
 
         # Process dependencies and accumulate globally required data
         pkg_files = []
@@ -231,10 +231,10 @@ class PremakeDeps(object):
             # Emit package premake file
             pkg_filename = PREMAKE_PKG_FILE.format(pkgname=dep_name)
             pkg_files.append(pkg_filename)
-            self._output_lua_file(pkg_filename, [
-                # Includes
-                *['include "{}"'.format(profile[0]) for profile in profiles],
-            ])
+            self._output_lua_file(
+                pkg_filename,
+                [*[f'include "{profile[0]}"' for profile in profiles]],
+            )
 
         # Output global premake file
         self._output_lua_file(PREMAKE_ROOT_FILE, [

@@ -22,7 +22,7 @@ class InfoTest(unittest.TestCase):
             """)
         requires = ""
         if deps:
-            requires = "requires = {}".format(", ".join('"{}"'.format(d) for d in deps))
+            requires = f"""requires = {", ".join(f'"{d}"' for d in deps)}"""
 
         conanfile = conanfile.format(name=name, version=version, requires=requires,
                                      license='"MIT"')
@@ -53,8 +53,8 @@ class InfoTest(unittest.TestCase):
             for dep in deps:
                 create_export(testdeps, dep)
 
-            expanded_deps = ["%s/0.1@lasote/stable" % dep for dep in deps]
-            export = False if name == "hello0" else True
+            expanded_deps = [f"{dep}/0.1@lasote/stable" for dep in deps]
+            export = name != "hello0"
             self._create(name, "0.1", expanded_deps, export=export)
 
         create_export(test_deps, "hello0")
@@ -91,8 +91,8 @@ class InfoTest(unittest.TestCase):
             for dep in deps:
                 create_export(testdeps, dep)
 
-            expanded_deps = ["%s/0.1@lasote/stable" % dep for dep in deps]
-            export = False if name == "hello0" else True
+            expanded_deps = [f"{dep}/0.1@lasote/stable" for dep in deps]
+            export = name != "hello0"
             self._create(name, "0.1", expanded_deps, export=export)
 
         create_export(test_deps, "hello0")
@@ -103,9 +103,15 @@ class InfoTest(unittest.TestCase):
         self.assertIn("<body>", html)
         self.assertIn("{ from: 0, to: 1 }", html)
         self.assertIn("id: 0,\n                        label: 'hello0/0.1',", html)
-        self.assertIn("Conan <b>v{}</b> <script>document.write(new Date().getFullYear())</script>"
-                      " JFrog LTD. <a>https://conan.io</a>"
-                      .format(client_version, datetime.today().year), html)
+        self.assertIn(
+            (
+                "Conan <b>v{}</b> <script>document.write(new Date().getFullYear())</script>"
+                " JFrog LTD. <a>https://conan.io</a>".format(
+                    client_version, datetime.now().year
+                )
+            ),
+            html,
+        )
 
     def test_info_build_requires(self):
         client = TestClient()

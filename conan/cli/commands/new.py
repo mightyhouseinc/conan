@@ -69,8 +69,7 @@ def new(conan_api, parser, *args):
 
             injected_vars = {"conan_version", "package_name", "as_name"}
             optional_vars = {"requires", "tool_requires"}
-            template_vars = list(set(template_vars) - injected_vars - optional_vars)
-            template_vars.sort()
+            template_vars = sorted(set(template_vars) - injected_vars - optional_vars)
             return template_vars
 
         raise ConanException("Missing definitions for the template. "
@@ -86,7 +85,7 @@ def new(conan_api, parser, *args):
         if os.path.exists(path) and not args.force:
             raise ConanException(f"File '{f}' already exists, and --force not defined, aborting")
         save(path, v)
-        output.success("File saved: %s" % f)
+        output.success(f"File saved: {f}")
 
     # copy non-templates
     for f, v in sorted(non_template_files.items()):
@@ -94,4 +93,4 @@ def new(conan_api, parser, *args):
         if os.path.exists(path) and not args.force:
             raise ConanException(f"File '{f}' already exists, and --force not defined, aborting")
         shutil.copy2(v, path)
-        output.success("File saved: %s" % f)
+        output.success(f"File saved: {f}")

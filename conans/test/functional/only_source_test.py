@@ -85,31 +85,31 @@ class OnlySourceTest(unittest.TestCase):
         ref = RecipeReference.loads("hello0/0.1@lasote/stable")
         client.save({"conanfile.py": GenConanfile("hello0", "0.1")})
         client.run("export . --user=lasote --channel=stable")
-        client.run("install --requires=%s --build missing" % str(ref))
+        client.run(f"install --requires={str(ref)} --build missing")
         pkg_layout = client.created_layout()
         self.assertTrue(os.path.exists(pkg_layout.build()))
         self.assertTrue(os.path.exists(pkg_layout.package()))
 
         # Upload
-        client.run("upload %s -r default" % str(ref))
+        client.run(f"upload {str(ref)} -r default")
 
         # Now from other "computer" install the uploaded conans with same options (nothing)
         other_client = TestClient(servers=client.servers)
-        other_client.run("install --requires=%s --build missing" % str(ref))
+        other_client.run(f"install --requires={str(ref)} --build missing")
         pref = client.get_latest_package_reference(ref)
         self.assertFalse(os.path.exists(other_client.get_latest_pkg_layout(pref).build()))
         self.assertTrue(os.path.exists(other_client.get_latest_pkg_layout(pref).package()))
 
         # Now from other "computer" install the uploaded conans with same options (nothing)
         other_client = TestClient(servers=client.servers)
-        other_client.run("install --requires=%s --build='*'" % str(ref))
+        other_client.run(f"install --requires={str(ref)} --build='*'")
         pkg_layout = other_client.created_layout()
         self.assertTrue(os.path.exists(pkg_layout.build()))
         self.assertTrue(os.path.exists(pkg_layout.package()))
 
         # Use an invalid pattern and check that its not builded from source
         other_client = TestClient(servers=client.servers)
-        other_client.run("install --requires=%s --build HelloInvalid" % str(ref))
+        other_client.run(f"install --requires={str(ref)} --build HelloInvalid")
 
         # pref = client.get_latest_package_reference(ref)
         # self.assertIn("No package matching 'HelloInvalid' pattern", other_client.out)
@@ -117,14 +117,16 @@ class OnlySourceTest(unittest.TestCase):
 
         # Use another valid pattern and check that its not builded from source
         other_client = TestClient(servers=client.servers)
-        other_client.run("install --requires=%s --build HelloInvalid -b hello" % str(ref))
+        other_client.run(
+            f"install --requires={str(ref)} --build HelloInvalid -b hello"
+        )
         # self.assertIn("No package matching 'HelloInvalid' pattern", other_client.out)
 
         # Now even if the package is in local store, check that's rebuilded
-        other_client.run("install --requires=%s -b hello*" % str(ref))
+        other_client.run(f"install --requires={str(ref)} -b hello*")
         self.assertIn("Copying sources to build folder", other_client.out)
 
-        other_client.run("install --requires=%s" % str(ref))
+        other_client.run(f"install --requires={str(ref)}")
         self.assertNotIn("Copying sources to build folder", other_client.out)
 
 

@@ -49,7 +49,7 @@ class ConanProxy:
 
         # TODO: cache2.0: check with new --update flows
         # TODO: If the revision is given, then we don't need to check for updates?
-        if not (check_update or update):
+        if not check_update and not update:
             status = RECIPE_INCACHE
             return recipe_layout, status, None
 
@@ -68,21 +68,7 @@ class ConanProxy:
         #  Check if this is the flow we want to follow
         assert ref.timestamp
         cache_time = ref.timestamp
-        if remote_ref.revision != ref.revision:
-            if cache_time < remote_ref.timestamp:
-                # the remote one is newer
-                if update:
-                    output.info("Retrieving from remote '%s'..." % remote.name)
-                    new_recipe_layout = self._download(remote_ref, remote)
-                    status = RECIPE_UPDATED
-                    return new_recipe_layout, status, remote
-                else:
-                    status = RECIPE_UPDATEABLE
-            else:
-                status = RECIPE_NEWER
-                # If your recipe in cache is newer it does not make sense to return a remote?
-                remote = None
-        else:
+        if remote_ref.revision == ref.revision:
             # TODO: cache2.0 we are returning RECIPE_UPDATED just because we are updating
             #  the date
             if cache_time >= remote_ref.timestamp:
@@ -90,6 +76,19 @@ class ConanProxy:
             else:
                 self._cache.update_recipe_timestamp(remote_ref)
                 status = RECIPE_INCACHE_DATE_UPDATED
+        elif cache_time < remote_ref.timestamp:
+                # the remote one is newer
+            if update:
+                output.info(f"Retrieving from remote '{remote.name}'...")
+                new_recipe_layout = self._download(remote_ref, remote)
+                status = RECIPE_UPDATED
+                return new_recipe_layout, status, remote
+            else:
+                status = RECIPE_UPDATEABLE
+        else:
+            status = RECIPE_NEWER
+            # If your recipe in cache is newer it does not make sense to return a remote?
+            remote = None
         return recipe_layout, status, remote
 
     def _find_newest_recipe_in_remotes(self, reference, remotes, update, check_update):
@@ -109,7 +108,7 @@ class ConanProxy:
             except NotFoundException:
                 pass
 
-        if len(results) == 0:
+        if not results:
             return None, None
 
         remotes_results = sorted(results, key=lambda k: k['ref'].timestamp, reverse=True)
@@ -125,7 +124,7 @@ class ConanProxy:
 
         remote, latest_rref = self._find_newest_recipe_in_remotes(ref, remotes, update, check_update)
         if not latest_rref:
-            msg = "Unable to find '%s' in remotes" % repr(ref)
+            msg = f"Unable to find '{repr(ref)}' in remotes"
             raise NotFoundException(msg)
 
         recipe_layout = self._download(latest_rref, remote)
@@ -136,5 +135,5 @@ class ConanProxy:
         assert ref.timestamp
         recipe_layout = self._remote_manager.get_recipe(ref, remote)
         output = ConanOutput(scope=str(ref))
-        output.info("Downloaded recipe revision %s" % ref.revision)
+        output.info(f"Downloaded recipe revision {ref.revision}")
         return recipe_layout

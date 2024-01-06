@@ -26,8 +26,7 @@ def load(conanfile, path, encoding="utf-8"):
     :return: The contents of the file
     """
     with open(path, "r", encoding=encoding, newline="") as handle:
-        tmp = handle.read()
-        return tmp
+        return handle.read()
 
 
 def save(conanfile, path, content, append=False, encoding="utf-8"):
@@ -42,8 +41,7 @@ def save(conanfile, path, content, append=False, encoding="utf-8"):
            existing one.
     :param encoding: (Optional, Defaulted to utf-8): Specifies the output file text encoding.
     """
-    dir_path = os.path.dirname(path)
-    if dir_path:
+    if dir_path := os.path.dirname(path):
         os.makedirs(dir_path, exist_ok=True)
     with open(path, "a" if append else "w", encoding=encoding, newline="") as handle:
         handle.write(content)
@@ -114,8 +112,9 @@ def get(conanfile, url, md5=None, sha1=None, sha256=None, destination=".", filen
     if not filename:  # deduce filename from the URL
         url_base = url[0] if isinstance(url, (list, tuple)) else url
         if "?" in url_base or "=" in url_base:
-            raise ConanException("Cannot deduce file name from the url: '{}'. Use 'filename' "
-                                 "parameter.".format(url_base))
+            raise ConanException(
+                f"Cannot deduce file name from the url: '{url_base}'. Use 'filename' parameter."
+            )
         filename = os.path.basename(url_base)
 
     download(conanfile, url, filename, verify=verify,
@@ -152,7 +151,7 @@ def ftp_download(conanfile, host, filename, login='', password='', secure=False)
         if filepath:
             ftp.cwd(filepath)
         with open(filename, 'wb') as f:
-            ftp.retrbinary('RETR ' + filename, f.write)
+            ftp.retrbinary(f'RETR {filename}', f.write)
     except Exception as e:
         try:
             os.unlink(filename)
@@ -219,7 +218,7 @@ def rename(conanfile, src, dst):
 
     # FIXME: This function has been copied from legacy. Needs to fix: which() call and wrap subprocess call.
     if os.path.exists(dst):
-        raise ConanException("rename {} to {} failed, dst exists.".format(src, dst))
+        raise ConanException(f"rename {src} to {dst} failed, dst exists.")
 
     if platform.system() == "Windows" and which("robocopy") and os.path.isdir(src):
         # /move Moves files and directories, and deletes them from the source after they are copied.
@@ -230,12 +229,12 @@ def rename(conanfile, src, dst):
                                    stdout=subprocess.PIPE)
         process.communicate()
         if process.returncode > 7:  # https://ss64.com/nt/robocopy-exit.html
-            raise ConanException("rename {} to {} failed.".format(src, dst))
+            raise ConanException(f"rename {src} to {dst} failed.")
     else:
         try:
             os.rename(src, dst)
         except Exception as err:
-            raise ConanException("rename {} to {} failed: {}".format(src, dst, err))
+            raise ConanException(f"rename {src} to {dst} failed: {err}")
 
 
 @contextmanager
@@ -319,16 +318,16 @@ def unzip(conanfile, filename, destination=".", keep_permissions=False, pattern=
                 raise ConanException("The zip file contains a file in the root")
             # Remove the directory entry if present
             # Note: The "zip" format contains the "/" at the end if it is a directory
-            zip_info = [m for m in zip_info if m.filename != (common_folder + "/")]
+            zip_info = [m for m in zip_info if m.filename != f"{common_folder}/"]
             for member in zip_info:
                 name = member.filename.replace("\\", "/")
                 member.filename = name.split("/", 1)[1]
 
         uncompress_size = sum((file_.file_size for file_ in zip_info))
         if uncompress_size > 100000:
-            output.info("Unzipping %s, this can take a while" % human_size(uncompress_size))
+            output.info(f"Unzipping {human_size(uncompress_size)}, this can take a while")
         else:
-            output.info("Unzipping %s" % human_size(uncompress_size))
+            output.info(f"Unzipping {human_size(uncompress_size)}")
         extracted_size = 0
 
         print_progress.last_size = -1
@@ -360,9 +359,7 @@ def untargz(filename, destination=".", pattern=None, strip_root=False):
     # NOT EXPOSED at `conan.tools.files` but used in tests
     import tarfile
     with tarfile.TarFile.open(filename, 'r:*') as tarredgzippedFile:
-        if not pattern and not strip_root:
-            tarredgzippedFile.extractall(destination)
-        else:
+        if pattern or strip_root:
             members = tarredgzippedFile.getmembers()
 
             if strip_root:
@@ -387,6 +384,9 @@ def untargz(filename, destination=".", pattern=None, strip_root=False):
                 members = list(filter(lambda m: fnmatch(m.name, pattern),
                                       tarredgzippedFile.getmembers()))
             tarredgzippedFile.extractall(destination, members=members)
+
+        else:
+            tarredgzippedFile.extractall(destination)
 
 
 def check_sha1(conanfile, file_path, signature):
@@ -440,13 +440,12 @@ def replace_in_file(conanfile, file_path, search, replace, strict=True, encoding
     """
     output = conanfile.output
     content = load(conanfile, file_path, encoding=encoding)
-    if -1 == content.find(search):
-        message = "replace_in_file didn't find pattern '%s' in '%s' file." % (search, file_path)
+    if content.find(search) == -1:
+        message = f"replace_in_file didn't find pattern '{search}' in '{file_path}' file."
         if strict:
             raise ConanException(message)
-        else:
-            output.warning(message)
-            return False
+        output.warning(message)
+        return False
     content = content.replace(search, replace)
     save(conanfile, file_path, content, encoding=encoding)
 

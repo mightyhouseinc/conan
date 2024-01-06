@@ -245,8 +245,8 @@ class TestConan(ConanFile):
         client.save({"conanfile.py": GenConanfile()})
         client.run("create . --name=hello --version=0.1 --user=lasote --channel=stable")
         conanfile = GenConanfile().with_name("hello1").with_version("0.1")\
-                                  .with_import("from conan.tools.files import copy, collect_libs") \
-                                  .with_require("hello/0.1@lasote/stable")
+                                      .with_import("from conan.tools.files import copy, collect_libs") \
+                                      .with_require("hello/0.1@lasote/stable")
 
         conanfile = str(conanfile) + """\n    def package_info(self):
         self.cpp_info.libs = collect_libs(self)
@@ -260,8 +260,9 @@ class TestConan(ConanFile):
         client.save({"Release_x86/lib/libmycoollib.a": ""})
         settings = ('-s os=Windows -s compiler=gcc -s compiler.version=4.9 '
                     '-s compiler.libcxx=libstdc++ -s build_type=Release -s arch=x86')
-        client.run("export-pkg . --name=hello1 --version=0.1 --user=lasote --channel=stable %s"
-                   % settings)
+        client.run(
+            f"export-pkg . --name=hello1 --version=0.1 --user=lasote --channel=stable {settings}"
+        )
 
         # consumer
         consumer = """

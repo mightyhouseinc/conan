@@ -88,10 +88,9 @@ def _get_solaris_architecture():
 
 
 def _get_aix_conf(options=None):
-    options = " %s" % options if options else ""
+    options = f" {options}" if options else ""
     try:
-        ret = check_output_runner("getconf%s" % options).strip()
-        return ret
+        return check_output_runner(f"getconf{options}").strip()
     except Exception as e:
         ConanOutput(scope="detect_api").warning(f"Couldn't get aix getconf {e}")
         return None
@@ -100,8 +99,7 @@ def _get_aix_conf(options=None):
 def _get_aix_architecture():
     processor = platform.processor()
     if "powerpc" in processor:
-        kernel_bitness = _get_aix_conf("KERNEL_BITMODE")
-        if kernel_bitness:
+        if kernel_bitness := _get_aix_conf("KERNEL_BITMODE"):
             return "ppc64" if kernel_bitness == "64" else "ppc32"
     elif "rs6000" in processor:
         return "ppc32"
@@ -146,13 +144,13 @@ def detect_libcxx(compiler, version):
         old_path = os.getcwd()
         os.chdir(t)
         try:
-            error, out_str = detect_runner("%s main.cpp -std=c++11" % executable)
+            error, out_str = detect_runner(f"{executable} main.cpp -std=c++11")
             if error:
                 if "using libstdc++" in out_str:
                     output.info("gcc C++ standard library: libstdc++")
                     return "libstdc++"
                 # Other error, but can't know, lets keep libstdc++11
-                output.warning("compiler.libcxx check error: %s" % out_str)
+                output.warning(f"compiler.libcxx check error: {out_str}")
                 output.warning("Couldn't deduce compiler.libcxx for gcc>=5.1, assuming libstdc++11")
             else:
                 output.info("gcc C++ standard library: libstdc++11")
@@ -160,8 +158,9 @@ def detect_libcxx(compiler, version):
         finally:
             os.chdir(old_path)
 
-        # This is not really a detection in most cases
-        # Get compiler C++ stdlib
+            # This is not really a detection in most cases
+            # Get compiler C++ stdlib
+
 
     if compiler == "apple-clang":
         return "libc++"
@@ -220,9 +219,7 @@ def default_cppstd(compiler, compiler_version):
         return "gnu98" if version < "6" else "gnu14"
 
     def _visual_cppstd_default(version):
-        if version >= "190":  # VS 2015 update 3 only
-            return "14"
-        return None
+        return "14" if version >= "190" else None
 
     def _mcst_lcc_cppstd_default(version):
         return "gnu14" if version >= "1.24" else "gnu98"
@@ -267,7 +264,7 @@ def detect_compiler():
     cc = os.environ.get("CC", "")
     cxx = os.environ.get("CXX", "")
     if cc or cxx:  # Env defined, use them
-        output.info("CC and CXX: %s, %s " % (cc or "None", cxx or "None"))
+        output.info(f'CC and CXX: {cc or "None"}, {cxx or "None"} ')
         command = cc or cxx
         if "clang" in command.lower():
             return _clang_compiler(command)
@@ -279,7 +276,7 @@ def detect_compiler():
             return gcc, gcc_version
         if "icpx" in command or "icx" in command:
             intel, intel_version = _intel_compiler(command)
-            return intel, intel_version        
+            return intel, intel_version
         if platform.system() == "SunOS" and command.lower() == "cc":
             return _sun_cc_compiler(command)
         if (platform.system() == "Windows" and command.rstrip('"').endswith(("cl", "cl.exe"))
@@ -287,13 +284,14 @@ def detect_compiler():
             return _msvc_cl_compiler(command)
 
         # I am not able to find its version
-        output.error("Not able to automatically detect '%s' version" % command)
+        output.error(f"Not able to automatically detect '{command}' version")
         return None, None
 
     if platform.system() == "Windows":
         version = _detect_vs_ide_version()
-        version = {"17": "193", "16": "192", "15": "191"}.get(str(version))  # Map to compiler
-        if version:
+        if version := {"17": "193", "16": "192", "15": "191"}.get(
+            str(version)
+        ):
             return 'msvc', Version(version)
 
     if platform.system() == "SunOS":
@@ -308,14 +306,11 @@ def detect_compiler():
         return
     else:
         gcc, gcc_version = _gcc_compiler()
-        if gcc:
-            return gcc, gcc_version
-        return _clang_compiler()
+        return (gcc, gcc_version) if gcc else _clang_compiler()
 
 
 def default_msvc_ide_version(version):
-    version = {"193": "17", "192": "16", "191": "15"}.get(str(version))
-    if version:
+    if version := {"193": "17", "192": "16", "191": "15"}.get(str(version)):
         return Version(version)
 
 
@@ -323,10 +318,9 @@ def _detect_vs_ide_version():
     from conans.client.conf.detect_vs import vs_installation_path
     msvc_versions = "17", "16", "15"
     for version in msvc_versions:
-        vs_path = os.getenv('vs%s0comntools' % version)
-        path = vs_path or vs_installation_path(version)
-        if path:
-            ConanOutput(scope="detect_api").info("Found msvc %s" % version)
+        vs_path = os.getenv(f'vs{version}0comntools')
+        if path := vs_path or vs_installation_path(version):
+            ConanOutput(scope="detect_api").info(f"Found msvc {version}")
             return Version(version)
     return None
 
@@ -335,57 +329,54 @@ def _gcc_compiler(compiler_exe="gcc"):
     try:
         if platform.system() == "Darwin":
             # In Mac OS X check if gcc is a fronted using apple-clang
-            _, out = detect_runner("%s --version" % compiler_exe)
+            _, out = detect_runner(f"{compiler_exe} --version")
             out = out.lower()
             if "clang" in out:
                 return None, None
 
-        ret, out = detect_runner('%s -dumpversion' % compiler_exe)
+        ret, out = detect_runner(f'{compiler_exe} -dumpversion')
         if ret != 0:
             return None, None
-        compiler = "gcc"
-        installed_version = re.search(r"([0-9]+(\.[0-9])?)", out).group()
-        # Since GCC 7.1, -dumpversion return the major version number
-        # only ("7"). We must use -dumpfullversion to get the full version
-        # number ("7.1.1").
-        if installed_version:
-            ConanOutput(scope="detect_api").info("Found %s %s" % (compiler, installed_version))
+        if installed_version := re.search(r"([0-9]+(\.[0-9])?)", out).group():
+            compiler = "gcc"
+            ConanOutput(scope="detect_api").info(f"Found {compiler} {installed_version}")
             return compiler, Version(installed_version)
-    except (Exception,):  # to disable broad-except
+    except Exception:  # to disable broad-except
         return None, None
 
 def _intel_compiler(compiler_exe="icx"):
     try:
-        ret, out = detect_runner("%s --version" % compiler_exe)
+        ret, out = detect_runner(f"{compiler_exe} --version")
         if ret != 0:
             return None, None
-        compiler = "intel-cc"
-        installed_version = re.search(r"(202[0-9]+(\.[0-9])?)", out).group()
-        if installed_version:
-            ConanOutput(scope="detect_api").info("Found %s %s" % (compiler, installed_version))
+        if installed_version := re.search(
+            r"(202[0-9]+(\.[0-9])?)", out
+        ).group():
+            compiler = "intel-cc"
+            ConanOutput(scope="detect_api").info(f"Found {compiler} {installed_version}")
             return compiler, Version(installed_version)
-    except (Exception,):  # to disable broad-except
+    except Exception:  # to disable broad-except
         return None, None
 
 def _sun_cc_compiler(compiler_exe="cc"):
     try:
-        _, out = detect_runner('%s -V' % compiler_exe)
-        compiler = "sun-cc"
+        _, out = detect_runner(f'{compiler_exe} -V')
         installed_version = re.search(r"Sun C.*([0-9]+\.[0-9]+)", out)
         if installed_version:
             installed_version = installed_version.group(1)
         else:
             installed_version = re.search(r"([0-9]+\.[0-9]+)", out).group()
         if installed_version:
-            ConanOutput(scope="detect_api").info("Found %s %s" % (compiler, installed_version))
+            compiler = "sun-cc"
+            ConanOutput(scope="detect_api").info(f"Found {compiler} {installed_version}")
             return compiler, Version(installed_version)
-    except (Exception,):  # to disable broad-except
+    except Exception:  # to disable broad-except
         return None, None
 
 
 def _clang_compiler(compiler_exe="clang"):
     try:
-        ret, out = detect_runner('%s --version' % compiler_exe)
+        ret, out = detect_runner(f'{compiler_exe} --version')
         if ret != 0:
             return None, None
         if "Apple" in out:
@@ -394,11 +385,10 @@ def _clang_compiler(compiler_exe="clang"):
             compiler = "clang"
         else:
             return None, None
-        installed_version = re.search(r"([0-9]+\.[0-9])", out).group()
-        if installed_version:
-            ConanOutput(scope="detect_api").info("Found %s %s" % (compiler, installed_version))
+        if installed_version := re.search(r"([0-9]+\.[0-9])", out).group():
+            ConanOutput(scope="detect_api").info(f"Found {compiler} {installed_version}")
             return compiler, Version(installed_version)
-    except (Exception,):  # to disable broad-except
+    except Exception:  # to disable broad-except
         return None, None
 
 
@@ -422,7 +412,7 @@ def _msvc_cl_compiler(compiler_exe="cl"):
         # 19.36.32535 -> 193
         version = f"{version_regex.group('major')}{version_regex.group('minor')[0]}"
         return compiler, Version(version)
-    except (Exception,):  # to disable broad-except
+    except Exception:  # to disable broad-except
         return None, None
 
 
